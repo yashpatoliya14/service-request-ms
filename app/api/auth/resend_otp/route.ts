@@ -4,42 +4,24 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { sendOtpViaEmail } from "@/services/auth";
 
-interface ISignupBody {
-    FullName: string;
-    Email: string;
-    Phone: number;
-    ProfilePhoto: string;
-    IsVerified: boolean;
-    Password: string;
-    Username: string;
-}
-
-interface ISignupResponse {
-    success: boolean;
-    message: string;
-    data: [{}];
-}
 
 // User level signup only 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { FullName, Email, Phone, ProfilePhoto, Password }: ISignupBody = body;
+        const { Email }: { Email: string } = body;
         console.log(body);
         // Check if user already exists
-        const existingUser = await prisma.users.findFirst({
-            where: {  Email }
+        const existingUser = await prisma.tempUser.findFirst({
+            where: { Email }
         });
 
-        if (existingUser) {
+        if (!existingUser) {
             return NextResponse.json(
-                { success: false, message: "User already exists with this email", data: [] },
+                { success: false, message: "User Not Exists", data: [] },
                 { status: 409 }
             );
         }
-
-        // Hash the password before storing
-        const hashedPassword = await bcrypt.hash(Password, 12);
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
@@ -47,18 +29,13 @@ export async function POST(req: NextRequest) {
         let status: boolean = await sendOtpViaEmail(Email, otp);
 
         if (status) {
-            const user = await prisma.tempUser.create({
+            const user = await prisma.tempUser.update({
+                where: {
+                    Email
+                },
                 data: {
-                    Email,
                     Otp: otp,
-                    OtpExpired: otpExpiry,
-                    Password: hashedPassword,
-                    FullName,
-                    Username: Email.slice(0, Email.indexOf('@')),
-                    ProfilePhoto,
-                    IsVerified: false,
-                    Phone,
-                    Role: "user"
+                    OtpExpired: otpExpiry
                 }
             });
 

@@ -131,3 +131,19 @@ model ServiceRequestTypeWisePerson {
   ServiceDeptPerson            ServiceDeptPerson?  @relation(fields: [ServicePersonID], references: [DeptPersonID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequestType           ServiceRequestType? @relation(fields: [ServiceRequestTypeID], references: [ServiceRequestTypeID], onDelete: NoAction, onUpdate: NoAction)
 }
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model TempUser {
+  id           BigInt    @id @default(autoincrement())
+  Created_At   DateTime  @default(now()) @db.Timestamptz(6)
+  Email        String?   @unique
+  Otp          Decimal?  @db.Decimal
+  OtpExpired   DateTime? @db.Timestamptz(6)
+  Role         String?
+  FullName     String?
+  Username     String?
+  ProfilePhoto String?
+  IsVerified   Boolean?
+  Password     String?
+  Phone        Decimal?  @db.Decimal
+}

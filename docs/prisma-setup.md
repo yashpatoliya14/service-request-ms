@@ -20,4 +20,4 @@ export const prisma =
 globalForPrisma.prisma || new PrismaClient();
 
 ### npx prisma db pull
-### npx generate
+### npx prisma generate

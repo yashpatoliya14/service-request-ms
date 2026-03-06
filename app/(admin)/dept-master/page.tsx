@@ -43,6 +43,8 @@ export default function DepartmentMaster() {
     "from-indigo-500 to-blue-500",
   ];
 
+  
+
   return (
     <div className="space-y-8">
       {/* Header */}
