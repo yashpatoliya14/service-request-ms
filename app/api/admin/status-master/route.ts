@@ -1,4 +1,3 @@
-import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,23 +11,12 @@ interface IStatusResponse {
 // POST - Create a new status
 export async function POST(req: NextRequest) {
     try {
-        const user = getDetailsFromToken(req);
-        if (!user) {
-            return NextResponse.json({ success: false, message: "User Not Found", data: [] }, { status: 401 });
-        }
-        if (user.role !== "admin") {
-            return NextResponse.json({ success: false, message: "Unauthorized", data: [] }, { status: 401 });
-        }
-
         const body = await req.json();
         const {
             ServiceRequestStatusName,
-            ServiceRequestStatusSystemName,
             Sequence,
             Description,
             ServiceRequestStatusCssClass,
-            IsOpen,
-            IsNoFurtherActionRequired,
             IsAllowedForTechnician,
         } = body;
 
@@ -42,13 +30,9 @@ export async function POST(req: NextRequest) {
             data: {
                 ServiceRequestStatusID: nextId,
                 ServiceRequestStatusName,
-                ServiceRequestStatusSystemName: ServiceRequestStatusSystemName || ServiceRequestStatusName.toLowerCase().replace(/\s+/g, "_"),
                 Sequence: Sequence ? parseFloat(Sequence) : nextId,
                 Description: Description || null,
-                UserID: BigInt(user.userId),
                 ServiceRequestStatusCssClass: ServiceRequestStatusCssClass || null,
-                IsOpen: IsOpen ?? true,
-                IsNoFurtherActionRequired: IsNoFurtherActionRequired ?? false,
                 IsAllowedForTechnician: IsAllowedForTechnician ?? false,
             },
         });

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CheckSquare, Plus, Trash2, Edit3, Loader2, X } from "lucide-react";
+import { CheckSquare, Plus, Trash2, Edit3, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,35 +30,29 @@ import { apiClient } from "@/lib/apiClient";
 interface StatusItem {
   ServiceRequestStatusID: number;
   ServiceRequestStatusName: string;
-  ServiceRequestStatusSystemName: string;
   Sequence: number | null;
   Description: string | null;
   ServiceRequestStatusCssClass: string | null;
-  IsOpen: boolean | null;
-  IsNoFurtherActionRequired: boolean | null;
   IsAllowedForTechnician: boolean | null;
   Created: string;
 }
 
 const COLOR_OPTIONS = [
-  { value: "bg-amber-500", label: "Amber", badge: "bg-amber-100 text-amber-700" },
-  { value: "bg-blue-500", label: "Blue", badge: "bg-blue-100 text-blue-700" },
-  { value: "bg-emerald-500", label: "Green", badge: "bg-emerald-100 text-emerald-700" },
-  { value: "bg-orange-500", label: "Orange", badge: "bg-orange-100 text-orange-700" },
-  { value: "bg-rose-500", label: "Red", badge: "bg-rose-100 text-rose-700" },
-  { value: "bg-violet-500", label: "Violet", badge: "bg-violet-100 text-violet-700" },
-  { value: "bg-cyan-500", label: "Cyan", badge: "bg-cyan-100 text-cyan-700" },
-  { value: "bg-slate-500", label: "Grey", badge: "bg-slate-100 text-slate-700" },
+  { value: "bg-amber-500", badge: "bg-amber-100 text-amber-700" },
+  { value: "bg-blue-500", badge: "bg-blue-100 text-blue-700" },
+  { value: "bg-emerald-500", badge: "bg-emerald-100 text-emerald-700" },
+  { value: "bg-orange-500", badge: "bg-orange-100 text-orange-700" },
+  { value: "bg-rose-500", badge: "bg-rose-100 text-rose-700" },
+  { value: "bg-violet-500", badge: "bg-violet-100 text-violet-700" },
+  { value: "bg-cyan-500", badge: "bg-cyan-100 text-cyan-700" },
+  { value: "bg-slate-500", badge: "bg-slate-100 text-slate-700" },
 ];
 
 const DEFAULT_FORM = {
   ServiceRequestStatusName: "",
-  ServiceRequestStatusSystemName: "",
   Sequence: "",
   Description: "",
   ServiceRequestStatusCssClass: "bg-blue-500",
-  IsOpen: true,
-  IsNoFurtherActionRequired: false,
   IsAllowedForTechnician: false,
 };
 
@@ -69,7 +63,6 @@ export default function StatusMaster() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingStatus, setEditingStatus] = useState<StatusItem | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
-
   const [formData, setFormData] = useState(DEFAULT_FORM);
 
   // ---- Fetch all statuses ----
@@ -98,14 +91,9 @@ export default function StatusMaster() {
     try {
       const res = await apiClient.post("/api/admin/status-master", {
         ServiceRequestStatusName: formData.ServiceRequestStatusName,
-        ServiceRequestStatusSystemName:
-          formData.ServiceRequestStatusSystemName ||
-          formData.ServiceRequestStatusName.toLowerCase().replace(/\s+/g, "_"),
         Sequence: formData.Sequence || undefined,
         Description: formData.Description || undefined,
         ServiceRequestStatusCssClass: formData.ServiceRequestStatusCssClass,
-        IsOpen: formData.IsOpen,
-        IsNoFurtherActionRequired: formData.IsNoFurtherActionRequired,
         IsAllowedForTechnician: formData.IsAllowedForTechnician,
       });
       if (res.success) {
@@ -125,12 +113,9 @@ export default function StatusMaster() {
     setEditingStatus(status);
     setFormData({
       ServiceRequestStatusName: status.ServiceRequestStatusName,
-      ServiceRequestStatusSystemName: status.ServiceRequestStatusSystemName,
       Sequence: status.Sequence?.toString() || "",
       Description: status.Description || "",
       ServiceRequestStatusCssClass: status.ServiceRequestStatusCssClass || "bg-blue-500",
-      IsOpen: status.IsOpen ?? true,
-      IsNoFurtherActionRequired: status.IsNoFurtherActionRequired ?? false,
       IsAllowedForTechnician: status.IsAllowedForTechnician ?? false,
     });
     setIsEditOpen(true);
@@ -145,12 +130,9 @@ export default function StatusMaster() {
         `/api/admin/status-master/${editingStatus.ServiceRequestStatusID}`,
         {
           ServiceRequestStatusName: formData.ServiceRequestStatusName,
-          ServiceRequestStatusSystemName: formData.ServiceRequestStatusSystemName,
           Sequence: formData.Sequence || undefined,
           Description: formData.Description || undefined,
           ServiceRequestStatusCssClass: formData.ServiceRequestStatusCssClass,
-          IsOpen: formData.IsOpen,
-          IsNoFurtherActionRequired: formData.IsNoFurtherActionRequired,
           IsAllowedForTechnician: formData.IsAllowedForTechnician,
         }
       );
@@ -186,30 +168,18 @@ export default function StatusMaster() {
     return match?.badge || "bg-slate-100 text-slate-700";
   };
 
-  // ---- Form component (reused for create & edit) ----
+  // ---- Reusable form for create & edit ----
   const renderForm = (onSubmit: () => void, submitLabel: string) => (
     <div className="grid gap-4 py-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Status Name *</Label>
-          <Input
-            placeholder="e.g., Under Review"
-            value={formData.ServiceRequestStatusName}
-            onChange={(e) =>
-              setFormData({ ...formData, ServiceRequestStatusName: e.target.value })
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>System Name</Label>
-          <Input
-            placeholder="auto-generated if blank"
-            value={formData.ServiceRequestStatusSystemName}
-            onChange={(e) =>
-              setFormData({ ...formData, ServiceRequestStatusSystemName: e.target.value })
-            }
-          />
-        </div>
+      <div className="space-y-2">
+        <Label>Status Name *</Label>
+        <Input
+          placeholder="e.g., Under Review"
+          value={formData.ServiceRequestStatusName}
+          onChange={(e) =>
+            setFormData({ ...formData, ServiceRequestStatusName: e.target.value })
+          }
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -249,41 +219,17 @@ export default function StatusMaster() {
           ))}
         </div>
       </div>
-      <div className="space-y-4 pt-2">
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <p className="text-sm font-medium">Is Open</p>
-            <p className="text-xs text-muted-foreground">Request is still active</p>
-          </div>
-          <Switch
-            checked={formData.IsOpen}
-            onCheckedChange={(val) => setFormData({ ...formData, IsOpen: val })}
-          />
+      <div className="flex items-center justify-between rounded-lg border p-3">
+        <div>
+          <p className="text-sm font-medium">Allowed for Technician</p>
+          <p className="text-xs text-muted-foreground">Technician can set this status</p>
         </div>
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <p className="text-sm font-medium">No Further Action</p>
-            <p className="text-xs text-muted-foreground">Ticket is closed/cancelled</p>
-          </div>
-          <Switch
-            checked={formData.IsNoFurtherActionRequired}
-            onCheckedChange={(val) =>
-              setFormData({ ...formData, IsNoFurtherActionRequired: val })
-            }
-          />
-        </div>
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <p className="text-sm font-medium">Allowed for Technician</p>
-            <p className="text-xs text-muted-foreground">Technician can set this status</p>
-          </div>
-          <Switch
-            checked={formData.IsAllowedForTechnician}
-            onCheckedChange={(val) =>
-              setFormData({ ...formData, IsAllowedForTechnician: val })
-            }
-          />
-        </div>
+        <Switch
+          checked={formData.IsAllowedForTechnician}
+          onCheckedChange={(val) =>
+            setFormData({ ...formData, IsAllowedForTechnician: val })
+          }
+        />
       </div>
       <Button onClick={onSubmit} className="mt-2 gap-2" disabled={submitting}>
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -332,7 +278,7 @@ export default function StatusMaster() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -341,19 +287,6 @@ export default function StatusMaster() {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Statuses</p>
               <p className="text-2xl font-bold">{loading ? "—" : statuses.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-emerald-200 bg-emerald-50/50">
-          <CardContent className="flex items-center gap-4 p-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
-              <CheckSquare className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Open Statuses</p>
-              <p className="text-2xl font-bold text-emerald-600">
-                {loading ? "—" : statuses.filter((s) => s.IsOpen).length}
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -393,7 +326,6 @@ export default function StatusMaster() {
                   <TableHead className="font-semibold">Status Name</TableHead>
                   <TableHead className="font-semibold">Badge</TableHead>
                   <TableHead className="font-semibold">Description</TableHead>
-                  <TableHead className="font-semibold text-center">Open</TableHead>
                   <TableHead className="font-semibold text-center">Technician</TableHead>
                   <TableHead className="text-right font-semibold">Actions</TableHead>
                 </TableRow>
@@ -404,13 +336,8 @@ export default function StatusMaster() {
                     <TableCell className="font-mono text-muted-foreground">
                       {s.Sequence ?? s.ServiceRequestStatusID}
                     </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="font-medium">{s.ServiceRequestStatusName}</p>
-                        <p className="text-xs text-muted-foreground font-mono">
-                          {s.ServiceRequestStatusSystemName}
-                        </p>
-                      </div>
+                    <TableCell className="font-medium">
+                      {s.ServiceRequestStatusName}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -426,13 +353,6 @@ export default function StatusMaster() {
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-[200px] truncate">
                       {s.Description || "—"}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {s.IsOpen ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Yes</Badge>
-                      ) : (
-                        <Badge variant="secondary">No</Badge>
-                      )}
                     </TableCell>
                     <TableCell className="text-center">
                       {s.IsAllowedForTechnician ? (

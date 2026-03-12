@@ -1,4 +1,3 @@
-import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -35,21 +34,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 // PATCH - Update status by ID
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
     try {
-        const user = getDetailsFromToken(req);
-        if (!user || user.role !== "admin") {
-            return NextResponse.json({ success: false, message: "Unauthorized", data: [] }, { status: 401 });
-        }
-
         const { id } = await params;
         const body = await req.json();
         const {
             ServiceRequestStatusName,
-            ServiceRequestStatusSystemName,
             Sequence,
             Description,
             ServiceRequestStatusCssClass,
-            IsOpen,
-            IsNoFurtherActionRequired,
             IsAllowedForTechnician,
         } = body;
 
@@ -57,12 +48,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
             where: { ServiceRequestStatusID: parseInt(id) },
             data: {
                 ServiceRequestStatusName,
-                ServiceRequestStatusSystemName,
                 Sequence: Sequence !== undefined ? parseFloat(Sequence) : undefined,
                 Description,
                 ServiceRequestStatusCssClass,
-                IsOpen,
-                IsNoFurtherActionRequired,
                 IsAllowedForTechnician,
                 Modified: new Date(),
             },
@@ -85,11 +73,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 // DELETE - Delete status by ID
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
     try {
-        const user = getDetailsFromToken(req);
-        if (!user || user.role !== "admin") {
-            return NextResponse.json({ success: false, message: "Unauthorized", data: [] }, { status: 401 });
-        }
-
         const { id } = await params;
 
         const status = await prisma.serviceRequestStatus.delete({

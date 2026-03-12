@@ -63,19 +63,14 @@ model ServiceRequestReply {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ServiceRequestStatus {
-  ServiceRequestStatusID         Int      @id
-  ServiceRequestStatusName       String
-  ServiceRequestStatusSystemName String
-  Sequence                       Float?   @db.Real
-  Description                    String?
-  UserID                         BigInt
-  Created                        DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
-  Modified                       DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
-  ServiceRequestStatusCssClass   String?
-  IsOpen                         Boolean?
-  IsNoFurtherActionRequired      Boolean?
-  IsAllowedForTechnician         Boolean?
-  Users                          Users    @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceRequestStatusID       Int      @id
+  ServiceRequestStatusName     String
+  Sequence                     Float?   @db.Real
+  Description                  String?
+  Created                      DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  Modified                     DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  ServiceRequestStatusCssClass String?
+  IsAllowedForTechnician       Boolean?
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -103,20 +98,19 @@ model ServiceType {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model Users {
-  UserID               BigInt                 @id @default(autoincrement())
-  created_at           DateTime               @default(now()) @db.Timestamptz(6)
-  Role                 String?                @default("Normal")
-  FullName             String?
-  Username             String?                @default("")
-  ProfilePhoto         String?                @default("NULL")
-  IsVerified           Boolean?               @default(false)
-  Password             String?
-  Email                String                 @unique
-  Phone                Decimal?               @db.Decimal
-  ServiceDeptPerson    ServiceDeptPerson[]
-  ServiceRequest       ServiceRequest[]
-  ServiceRequestReply  ServiceRequestReply[]
-  ServiceRequestStatus ServiceRequestStatus[]
+  UserID              BigInt                @id @default(autoincrement())
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  Role                String?               @default("Normal")
+  FullName            String?
+  Username            String?               @default("")
+  ProfilePhoto        String?               @default("NULL")
+  IsVerified          Boolean?              @default(false)
+  Password            String?
+  Email               String                @unique
+  Phone               Decimal?              @db.Decimal
+  ServiceDeptPerson   ServiceDeptPerson[]
+  ServiceRequest      ServiceRequest[]
+  ServiceRequestReply ServiceRequestReply[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
