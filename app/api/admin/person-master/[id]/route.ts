@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     try {
         const { id } = await params;
         const body = await req.json();
-        const { ServiceDeptID, Role } = body;
+        const { ServiceDeptID, Role,FullName,Email,Phone } = body;
         
         
         //update the Person Master Data
@@ -71,6 +71,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             await prisma.users.update({
                 data: {
                     Role: Role,
+                    FullName: FullName,
+                    Email: Email,
+                    Phone: Phone,
                 },
                 where: {
                     UserID: BigInt(user.UserID),

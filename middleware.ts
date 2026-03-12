@@ -18,6 +18,7 @@ const PUBLIC_PATHS = [
     "/api/auth/send_reset_otp",
     "/api/auth/reset_password",
     "/api/auth/resend_otp",
+    "/api/auth/is_dept_person",
 ];
 // Routes accessible to ALL authenticated users (no role check needed)
 const AUTHENTICATED_PATHS = [

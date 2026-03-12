@@ -53,18 +53,36 @@ export default function LoginPage() {
       }
       return { errors: fieldErrors, message: "Validation failed" };
     }
+    let needsPasswordReset = false;
+    try {
+      const res1 = await apiClient.get(`/api/auth/is_dept_person?email=${encodeURIComponent(result.data.email)}`);
+      if (res1.success) {
+        needsPasswordReset = true;
+      }
+    } catch (e) {
+      console.log("Normal login flow routing:", e instanceof Error ? e.message : e);
+    }
+
+    if (needsPasswordReset) {
+      router.push("/reset-password")
+      return { errors: {}, message: "" };
+    }
+    
     try {
       const res = await apiClient.post("/api/auth/login", { Email: result.data.email, Password: result.data.password });
-      if (res.success) {
-        // Redirect based on user role
-        const role = (res.data as any)?.[0]?.Role?.toLowerCase() ?? "user";
-        const dashboardMap: Record<string, string> = {
-          admin: "/admin-dashboard",
-          hod: "/hod-dashboard",
-          user: "/portal-dashboard",
-        };
-        router.push(dashboardMap[role] || "/portal-dashboard");
-      }
+        if (res.success) {
+          // Redirect based on user role
+          const role = (res.data as any)?.[0]?.Role?.toLowerCase() ?? "user";
+          const dashboardMap: Record<string, string> = {
+            admin: "/admin-dashboard",
+            hod: "/hod-dashboard",
+            user: "/portal-dashboard",
+          };
+          router.push(dashboardMap[role] || "/portal-dashboard");
+          return { errors: {}, message: "" };
+        } else {
+          return { errors: {}, message: res.message || "Invalid credentials" };
+        }
     } catch (error) {
       console.error(error);
       return {

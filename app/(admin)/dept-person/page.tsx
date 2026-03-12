@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -35,11 +36,13 @@ import {
 import { apiClient } from "@/lib/apiClient";
 
 // Types
+// department interface
 interface Department {
   ServiceDeptID: string;
   DeptName: string;
 }
 
+// person master interface
 interface PersonMaster {
   DeptPersonID: string;
   ServiceDeptID: string | null;
@@ -54,7 +57,8 @@ interface PersonMaster {
   } | null;
 }
 
-interface CreateForm {
+// form for edit and create interface
+interface Form {
   FullName: string;
   Email: string;
   Phone: string;
@@ -62,12 +66,9 @@ interface CreateForm {
   ServiceDeptID: string;
 }
 
-interface EditForm {
-  ServiceDeptID: string;
-  Role: string;
-}
 
-const emptyCreateForm: CreateForm = {
+// intial states
+const emptyForm: Form = {
   FullName: "",
   Email: "",
   Phone: "",
@@ -75,10 +76,7 @@ const emptyCreateForm: CreateForm = {
   ServiceDeptID: "",
 };
 
-const emptyEditForm: EditForm = {
-  ServiceDeptID: "",
-  Role: "",
-};
+
 
 export default function DeptPersonMapping() {
   const [personnel, setPersonnel] = useState<PersonMaster[]>([]);
@@ -88,19 +86,82 @@ export default function DeptPersonMapping() {
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<CreateForm>(emptyCreateForm);
+  const [createForm, setCreateForm] = useState<Form>(emptyForm);
   const [creating, setCreating] = useState(false);
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<PersonMaster | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>(emptyEditForm);
+  const [editForm, setEditForm] = useState<Form>(emptyForm);
   const [editing, setEditing] = useState(false);
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<PersonMaster | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+    // Shared form fields component
+    const renderFormFields = (form: Form, setForm: (f: Form) => void) => (
+      <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Full Name</Label>
+                  <Input
+                    placeholder="e.g., Vijay Shah"
+                    value={form.FullName}
+                    onChange={(e) => setCreateForm({ ...createForm, FullName: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="e.g., vijay@company.com"
+                    value={form.Email}
+                    onChange={(e) => setForm({ ...form, Email: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input
+                    placeholder="e.g., 9876543210"
+                    value={form.Phone}
+                    onChange={(e) => setForm({ ...form, Phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Role</Label>
+                  <Select value={form.Role} onValueChange={(v) => setForm({ ...form, Role: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hod">HOD</SelectItem>
+                      <SelectItem value="technician">Technician</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <Select value={form.ServiceDeptID} onValueChange={(v) => setForm({ ...form, ServiceDeptID: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d.ServiceDeptID} value={d.ServiceDeptID.toString()}>
+                        {d.DeptName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+    );
+  
 
   // Fetch data
   const fetchAll = useCallback(async () => {
@@ -138,7 +199,7 @@ export default function DeptPersonMapping() {
         ServiceDeptID: createForm.ServiceDeptID,
       });
       if (res.success) {
-        setCreateForm(emptyCreateForm);
+        setCreateForm(emptyForm);
         setCreateOpen(false);
         fetchAll();
       }
@@ -147,6 +208,8 @@ export default function DeptPersonMapping() {
       setError("Failed to add personnel");
     } finally {
       setCreating(false);
+      setCreateOpen(false);
+
     }
   };
 
@@ -169,6 +232,7 @@ export default function DeptPersonMapping() {
       setError("Failed to update personnel");
     } finally {
       setEditing(false);
+      setEditOpen(false);
     }
   };
 
@@ -187,6 +251,7 @@ export default function DeptPersonMapping() {
       setError("Failed to remove personnel");
     } finally {
       setDeleting(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -195,6 +260,9 @@ export default function DeptPersonMapping() {
     setEditForm({
       ServiceDeptID: item.ServiceDeptID?.toString() ?? "",
       Role: item.Users?.Role?.toLowerCase() ?? "user",
+      FullName: item.Users?.FullName ?? "",
+      Email: item.Users?.Email ?? "",
+      Phone: item.Users?.Phone ?? "",
     });
     setEditOpen(true);
   };
@@ -219,6 +287,14 @@ export default function DeptPersonMapping() {
         <Badge className="gap-1 bg-blue-100 text-blue-700 hover:bg-blue-100">
           <Wrench className="h-3 w-3" />
           Technician
+        </Badge>
+      );
+    }
+    if (r === "user") {
+      return (
+        <Badge className="gap-1 bg-gray-100 text-gray-600 hover:bg-gray-100">
+          <User className="h-3 w-3" />
+          User
         </Badge>
       );
     }
@@ -254,7 +330,7 @@ export default function DeptPersonMapping() {
           </p>
         </div>
 
-        {/* Create Dialog */}
+        {/* Dialog */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2 shadow-lg shadow-primary/25">
@@ -269,64 +345,7 @@ export default function DeptPersonMapping() {
                 Add an HOD or Technician and assign them to a department.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Full Name</Label>
-                  <Input
-                    placeholder="e.g., Vijay Shah"
-                    value={createForm.FullName}
-                    onChange={(e) => setCreateForm({ ...createForm, FullName: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input
-                    type="email"
-                    placeholder="e.g., vijay@company.com"
-                    value={createForm.Email}
-                    onChange={(e) => setCreateForm({ ...createForm, Email: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Phone</Label>
-                  <Input
-                    placeholder="e.g., 9876543210"
-                    value={createForm.Phone}
-                    onChange={(e) => setCreateForm({ ...createForm, Phone: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Role</Label>
-                  <Select value={createForm.Role} onValueChange={(v) => setCreateForm({ ...createForm, Role: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hod">HOD</SelectItem>
-                      <SelectItem value="technician">Technician</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Select value={createForm.ServiceDeptID} onValueChange={(v) => setCreateForm({ ...createForm, ServiceDeptID: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((d) => (
-                      <SelectItem key={d.ServiceDeptID} value={d.ServiceDeptID.toString()}>
-                        {d.DeptName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            {renderFormFields(createForm, setCreateForm)}
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
               <Button
@@ -362,7 +381,9 @@ export default function DeptPersonMapping() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Personnel</p>
-              <p className="text-2xl font-bold">{loading ? "—" : personnel.length}</p>
+              <div className="text-2xl font-bold">
+                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : personnel.length}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -373,7 +394,9 @@ export default function DeptPersonMapping() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">HODs</p>
-              <p className="text-2xl font-bold">{loading ? "—" : hodCount}</p>
+              <div className="text-2xl font-bold">
+                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : hodCount}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -384,7 +407,9 @@ export default function DeptPersonMapping() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Technicians</p>
-              <p className="text-2xl font-bold">{loading ? "—" : techCount}</p>
+              <div className="text-2xl font-bold">
+                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : techCount}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -427,7 +452,6 @@ export default function DeptPersonMapping() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="font-semibold">#</TableHead>
                   <TableHead className="font-semibold">Staff Member</TableHead>
                   <TableHead className="font-semibold">Email</TableHead>
                   <TableHead className="font-semibold">Department</TableHead>
@@ -438,7 +462,6 @@ export default function DeptPersonMapping() {
               <TableBody>
                 {personnel.map((item, index) => (
                   <TableRow key={item.DeptPersonID} className="group">
-                    <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
@@ -464,7 +487,7 @@ export default function DeptPersonMapping() {
                     </TableCell>
                     <TableCell>{getRoleBadge(item.Users?.Role ?? null)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex justify-end gap-1 opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -500,35 +523,7 @@ export default function DeptPersonMapping() {
               Update department and role for <strong>{editItem?.Users?.FullName}</strong>.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label>Department</Label>
-              <Select value={editForm.ServiceDeptID} onValueChange={(v) => setEditForm({ ...editForm, ServiceDeptID: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select department..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((d) => (
-                    <SelectItem key={d.ServiceDeptID} value={d.ServiceDeptID.toString()}>
-                      {d.DeptName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <Select value={editForm.Role} onValueChange={(v) => setEditForm({ ...editForm, Role: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hod">HOD</SelectItem>
-                  <SelectItem value="technician">Technician</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+         {renderFormFields(editForm, setEditForm)}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button onClick={handleUpdate} disabled={editing || !editForm.ServiceDeptID || !editForm.Role}>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -360,7 +361,9 @@ export default function RequestTypeMaster() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Request Types</p>
-              <p className="text-2xl font-bold">{loading ? "—" : requestTypes.length}</p>
+              <div className="text-2xl font-bold">
+                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : requestTypes.length}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -371,9 +374,9 @@ export default function RequestTypeMaster() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Active Types</p>
-              <p className="text-2xl font-bold">
-                {loading ? "—" : requestTypes.filter((r) => r.IsActive).length}
-              </p>
+              <div className="text-2xl font-bold">
+                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : requestTypes.filter((r) => r.IsActive).length}
+              </div>
             </div>
           </CardContent>
         </Card>
