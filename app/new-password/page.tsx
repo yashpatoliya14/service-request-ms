@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { ShieldCheck, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -37,7 +37,7 @@ const initialState: NewPasswordState = {
     message: "",
 };
 
-export default function NewPasswordPage() {
+function NewPasswordContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get("email") ?? "";
@@ -254,5 +254,17 @@ export default function NewPasswordPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function NewPasswordPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <NewPasswordContent />
+        </Suspense>
     );
 }

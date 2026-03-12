@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         // For signup flow: create user from tempUser data
         const newUser = await prisma.users.create({
             data: {
-                Email: tempUser.Email,
+                Email: tempUser.Email || "",
                 Password: tempUser.Password,
                 FullName: tempUser.FullName,
                 Username: tempUser.Username,

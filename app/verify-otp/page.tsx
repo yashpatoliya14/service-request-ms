@@ -1,6 +1,7 @@
 "use client";
 
-import { ShieldCheck, KeyRound } from "lucide-react";
+import { Suspense } from "react";
+import { ShieldCheck, KeyRound, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
     Card,
@@ -25,7 +26,7 @@ const initialState: OtpState = {
     message: "",
 };
 
-export default function VerifyOtpPage() {
+function VerifyOtpContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get("email") ?? "";
@@ -197,5 +198,17 @@ export default function VerifyOtpPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function VerifyOtpPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <VerifyOtpContent />
+        </Suspense>
     );
 }

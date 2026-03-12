@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
 
 // GET - Get all requests assigned to a technician by ID
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
 
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 
 // PUT - Update the status of a service request by ID
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
         const body = await req.json();
