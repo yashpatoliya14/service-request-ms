@@ -49,6 +49,7 @@ interface ServiceRequest {
   AssignedToID: string | null;
   Users?: { FullName: string } | null;
   ServiceRequestType?: { RequestTypeName: string } | null;
+  ServiceRequestStatus?: { ServiceRequestStatusName: string; ServiceRequestStatusCssClass: string } | null;
 }
 
 interface DeptPerson {
@@ -60,6 +61,12 @@ interface DeptPerson {
   ServiceDepartment?: { DeptName: string } | null;
 }
 
+interface Status {
+  StatusID: string;
+  StatusName: string;
+  ServiceRequestStatusCssClass: string;
+}
+
 export default function HODDashboard() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [technicians, setTechnicians] = useState<DeptPerson[]>([]);
@@ -69,6 +76,8 @@ export default function HODDashboard() {
 
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+
+  const [status, setStatus] = useState<Status[]>([]);
 
   // ---- Fetch all requests ----
   const fetchRequests = async () => {
@@ -88,6 +97,17 @@ export default function HODDashboard() {
     }
   };
 
+  const fetchStatus = async () => {
+    try {
+      const res = await apiClient.get<Status[]>("/api/admin/service-status");
+      if (res.success && res.data) {
+        setStatus(res.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch status:", err);
+    }
+  };
+
   // ---- Fetch all personnel (technicians) ----
   const fetchTechnicians = async () => {
     try {
@@ -103,6 +123,7 @@ export default function HODDashboard() {
   useEffect(() => {
     fetchRequests();
     fetchTechnicians();
+    fetchStatus();
   }, []);
 
   // ---- Assign technician to request ----
@@ -123,6 +144,8 @@ export default function HODDashboard() {
               : req
           )
         );
+
+        
         setIsAssignModalOpen(false);
         setSelectedRequest(null);
       }
@@ -137,9 +160,9 @@ export default function HODDashboard() {
   const getStatusLabel = (statusId: string | null) => {
     if (!statusId) return "Pending";
     const id = Number(statusId);
-    if (id === 1) return "Pending";
-    if (id === 2) return "In Progress";
-    if (id === 3) return "Completed";
+    if (status.find((s) => String(s.StatusID) === String(id))) {
+      return status.find((s) => String(s.StatusID) === String(id))?.StatusName;
+    }
     return "Pending";
   };
 
@@ -331,15 +354,9 @@ export default function HODDashboard() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          className={
-                            status === "Completed"
-                              ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                              : status === "In Progress"
-                              ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
-                              : "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                          }
+                          className={req.ServiceRequestStatus?.ServiceRequestStatusCssClass || "bg-slate-100 text-slate-700 hover:bg-slate-100"}
                         >
-                          {status}
+                          {req.ServiceRequestStatus?.ServiceRequestStatusName}
                         </Badge>
                       </TableCell>
                       <TableCell>

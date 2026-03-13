@@ -22,6 +22,14 @@ export async function POST(req: NextRequest) {
         const requests = await prisma.serviceRequest.findMany({
             where: {
                 RequestorID: BigInt(user.RequestorID),
+            },
+            include: {
+                ServiceRequestStatus: true,
+                ServiceRequestType: {
+                    include: {
+                        ServiceDepartment: true
+                    }
+                }
             }
         })
         if (requests) {

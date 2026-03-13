@@ -22,11 +22,11 @@ model ServiceDeptPerson {
   DeptPersonID                 BigInt                         @id @default(autoincrement())
   CreatedAt                    DateTime                       @default(now()) @db.Timestamptz(6)
   ServiceDeptID                BigInt?
-  UserID                       BigInt?
+  UserID                       BigInt                         @unique
   IsActive                     Boolean?
   ModifiedAt                   DateTime?                      @db.Timestamp(6)
   ServiceDepartment            ServiceDepartment?             @relation(fields: [ServiceDeptID], references: [ServiceDeptID], onDelete: NoAction, onUpdate: NoAction)
-  Users                        Users?                         @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction)
+  Users                        Users                          @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequest               ServiceRequest[]
   ServiceRequestTypeWisePerson ServiceRequestTypeWisePerson[]
 }
@@ -39,13 +39,14 @@ model ServiceRequest {
   ServiceRequestTypeID BigInt?
   RequestorID          BigInt?
   AssignedToID         BigInt?
-  StatusID             BigInt?
+  StatusID             Int?
   Title                String?
   Description          String?
   Priority             BigInt?
   ServiceDeptPerson    ServiceDeptPerson?    @relation(fields: [AssignedToID], references: [DeptPersonID], onDelete: NoAction, onUpdate: NoAction)
   Users                Users?                @relation(fields: [RequestorID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "ServiceRequest_RequesterID_fkey")
   ServiceRequestType   ServiceRequestType?   @relation(fields: [ServiceRequestTypeID], references: [ServiceRequestTypeID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceRequestStatus ServiceRequestStatus? @relation(fields: [StatusID], references: [ServiceRequestStatusID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequestReply  ServiceRequestReply[]
 }
 
@@ -63,14 +64,15 @@ model ServiceRequestReply {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ServiceRequestStatus {
-  ServiceRequestStatusID       Int      @id
+  ServiceRequestStatusID       Int              @id
   ServiceRequestStatusName     String
-  Sequence                     Float?   @db.Real
+  Sequence                     Float?           @db.Real
   Description                  String?
-  Created                      DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
-  Modified                     DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  Created                      DateTime         @default(dbgenerated("CURRENT_DATE")) @db.Date
+  Modified                     DateTime         @default(dbgenerated("CURRENT_DATE")) @db.Date
   ServiceRequestStatusCssClass String?
   IsAllowedForTechnician       Boolean?
+  ServiceRequest               ServiceRequest[]
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -108,7 +110,7 @@ model Users {
   Password            String?
   Email               String                @unique
   Phone               Decimal?              @db.Decimal
-  ServiceDeptPerson   ServiceDeptPerson[]
+  ServiceDeptPerson   ServiceDeptPerson?
   ServiceRequest      ServiceRequest[]
   ServiceRequestReply ServiceRequestReply[]
 }

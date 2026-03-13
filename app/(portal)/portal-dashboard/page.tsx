@@ -58,6 +58,17 @@ interface ServiceRequest {
     RequestTypeName: string;
     ServiceDepartment?: { DeptName: string };
   } | null;
+  ServiceRequestStatus?: {
+    ServiceRequestStatusName: string;
+    ServiceRequestStatusCssClass: string;
+  } | null;
+}
+
+interface ServiceRequestStatus {
+  ServiceRequestStatusID: number;
+  ServiceRequestStatusName: string;
+  ServiceRequestStatusCssClass: string;
+  IsAllowedForTechnician: boolean;
 }
 
 interface Department {
@@ -86,6 +97,7 @@ export default function PortalDashboard() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [requestTypes, setRequestTypes] = useState<RequestType[]>([]);
+  const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -119,12 +131,14 @@ export default function PortalDashboard() {
   useEffect(() => {
     const fetchFormData = async () => {
       try {
-        const [deptRes, typeRes] = await Promise.all([
+        const [deptRes, typeRes, statusRes] = await Promise.all([
           apiClient.get<Department[]>("/api/admin/department"),
           apiClient.get<RequestType[]>("/api/admin/service-request-type"),
+          apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master"),
         ]);
         if (deptRes.success) setDepartments(deptRes.data || []);
         if (typeRes.success) setRequestTypes(typeRes.data || []);
+        if (statusRes.success) setStatuses(statusRes.data || []);
       } catch (err) {
         console.error("Failed to fetch form data:", err);
       }
@@ -212,22 +226,18 @@ export default function PortalDashboard() {
   const getStatusLabel = (statusId: string | null) => {
     if (!statusId) return "Pending";
     const id = Number(statusId);
-    if (id === 1) return "Pending";
-    if (id === 2) return "In Progress";
-    if (id === 3) return "Completed";
+    const status = statuses.find(s => s.ServiceRequestStatusID === id);
+    if (status) return status.ServiceRequestStatusName;
+
     return "Pending";
   };
 
-  const getStatusBadge = (statusId: string | null) => {
-    const label = getStatusLabel(statusId);
-    switch (label) {
-      case "Completed":
-        return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Completed</Badge>;
-      case "In Progress":
-        return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">In Progress</Badge>;
-      default:
-        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Pending</Badge>;
-    }
+  const getStatusBadge = (req: ServiceRequest) => {
+    return (
+      <Badge className={req.ServiceRequestStatus?.ServiceRequestStatusCssClass || "bg-slate-100 text-slate-700 hover:bg-slate-100"}>
+        {req.ServiceRequestStatus?.ServiceRequestStatusName || getStatusLabel(req.StatusID)}
+      </Badge>
+    );
   };
 
   const pendingCount = requests.filter((r) => getStatusLabel(r.StatusID) === "Pending").length;
@@ -447,7 +457,7 @@ export default function PortalDashboard() {
                         {req.ServiceRequestType?.RequestTypeName || "—"}
                       </span>
                     </TableCell>
-                    <TableCell>{getStatusBadge(req.StatusID)}</TableCell>
+                    <TableCell>{getStatusBadge(req)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         {getStatusLabel(req.StatusID) === "Pending" && (

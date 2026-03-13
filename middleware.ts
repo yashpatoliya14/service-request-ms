@@ -53,6 +53,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
         "/portal-dashboard", "/request-details", "/technician", "/api/portal",
         // Allow reading departments & request types for forms
         "/api/admin/department", "/api/admin/service-request-type",
+        "/api/admin/status-master", "/api/auth/me","/api/portal/technician"
     ],
 };
 

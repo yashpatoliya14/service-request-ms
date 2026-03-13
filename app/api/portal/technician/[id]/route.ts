@@ -19,23 +19,24 @@ interface IRequestorResponse {
 }
 
 
-// Create Requestor  
-export async function POST(req: NextRequest) {
+// update a status
+export async function PATCH(req: NextRequest) {
     try {
 
         const body = await req.json();
-        const { ServiceRequestTypeID, RequestorID, Title, Description, Priority } = body;
+        const { ServiceRequestTypeID, StatusID } = body;
 
-        //create a requestor
-        const requestor = await prisma.serviceRequest.create({
+
+        const requestor = await prisma.serviceRequest.update({
+            where: {
+                ServiceRequestID: BigInt(ServiceRequestTypeID),
+            },
             data: {
-                ServiceRequestTypeID: BigInt(ServiceRequestTypeID),
-                RequestorID: BigInt(RequestorID),
-                Title: Title,
-                Description: Description,
-                Priority: Priority,
+                StatusID: Number(StatusID),
             }
         })
+        console.log(requestor);
+
         if (requestor) {
             return NextResponse.json({ success: true, message: "Requestor Created Successfull", data: [requestor] } as IRequestorResponse, { status: 200 });
         } else {
@@ -54,10 +55,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
         const { id } = await params;
 
+        // get from dept person
+        const deptPerson = await prisma.serviceDeptPerson.findUnique({
+            where: {
+                UserID: BigInt(id),
+            },
+        });
+
+        if (!deptPerson) {
+            return NextResponse.json(
+                { success: false, message: "Technician Not Found", data: [] },
+                { status: 404 }
+            );
+        }
+
         // Get all requests assigned to this technician
         const requests = await prisma.serviceRequest.findMany({
             where: {
-                AssignedToID: BigInt(id),
+                AssignedToID: BigInt(deptPerson.DeptPersonID),
             },
         });
 

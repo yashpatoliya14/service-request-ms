@@ -5,14 +5,19 @@ import {
   Wrench,
   CheckCircle2,
   Clock,
-  ChevronRight,
   AlertCircle,
   Loader2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiClient } from "@/lib/apiClient";
 
 // ---- Types ----
@@ -38,25 +43,41 @@ interface UserInfo {
   username: string;
 }
 
+interface ServiceRequestStatus {
+  ServiceRequestStatusID: number;
+  ServiceRequestStatusName: string;
+  IsAllowedForTechnician: boolean;
+  ServiceRequestStatusCssClass: string;
+}
+
 export default function TechnicianDashboard() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // ---- Fetch user info ----
+  // ---- Fetch user info & statuses ----
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndStatuses = async () => {
       try {
-        const res = await apiClient.get<UserInfo[]>("/api/auth/me");
-        if (res.success && res.data?.[0]) {
-          setUser(res.data[0] as unknown as UserInfo);
+        const [userRes, statusRes] = await Promise.all([
+          apiClient.get<UserInfo[]>("/api/auth/me"),
+          apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master")
+        ]);
+
+        if (userRes.success && userRes.data?.[0]) {
+          setUser(userRes.data[0] as unknown as UserInfo);
+        }
+
+        if (statusRes.success && statusRes.data) {
+          setStatuses(statusRes.data);
         }
       } catch (err) {
-        console.error("Failed to fetch user:", err);
+        console.error("Failed to fetch initial data:", err);
       }
     };
-    fetchUser();
+    fetchUserAndStatuses();
   }, []);
 
   // ---- Fetch requests assigned to this technician ----
@@ -90,8 +111,9 @@ export default function TechnicianDashboard() {
   const handleUpdateStatus = async (requestId: string, newStatusId: string) => {
     setUpdatingId(requestId);
     try {
-      const res = await apiClient.put(`/api/portal/technician/${requestId}`, {
+      const res = await apiClient.patch(`/api/portal/technician/${requestId}`, {
         StatusID: newStatusId,
+        ServiceRequestTypeID: requestId,
       });
       if (res.success) {
         // Update local state
@@ -114,24 +136,25 @@ export default function TechnicianDashboard() {
   const getStatusLabel = (statusId: string | null) => {
     if (!statusId) return "Pending";
     const id = Number(statusId);
+    const status = statuses.find(s => s.ServiceRequestStatusID === id);
+    if (status) return status.ServiceRequestStatusName;
+
     if (id === 1) return "Pending";
-    if (id === 2) return "In Progress";
-    if (id === 3) return "Completed";
+    if (id === 2) return "Assigned";
+    if (id === 3) return "In Progress";
+    if (id === 4) return "Completed";
     return "Pending";
   };
 
   const getStatusBadge = (statusId: string | null) => {
-    const label = getStatusLabel(statusId);
-    switch (label) {
-      case "Pending":
-        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Pending</Badge>;
-      case "In Progress":
-        return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">In Progress</Badge>;
-      case "Completed":
-        return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Completed</Badge>;
-      default:
-        return <Badge variant="secondary">{label}</Badge>;
-    }
+    const id = Number(statusId);
+    const status = statuses.find(s => s.ServiceRequestStatusID === id);
+
+    return (
+      <Badge className={status?.ServiceRequestStatusCssClass || "bg-slate-100 text-slate-700 hover:bg-slate-100"}>
+        {getStatusLabel(statusId)}
+      </Badge>
+    );
   };
 
   const getPriorityLabel = (priority: string | null) => {
@@ -141,21 +164,6 @@ export default function TechnicianDashboard() {
     if (p === 3) return "High";
     if (p === 2) return "Medium";
     return "Low";
-  };
-
-  // Next status transition: Pending → In Progress (2) → Completed (3)
-  const getNextStatusId = (currentStatusId: string | null) => {
-    const label = getStatusLabel(currentStatusId);
-    if (label === "Pending") return "2";
-    if (label === "In Progress") return "3";
-    return null;
-  };
-
-  const getNextActionLabel = (currentStatusId: string | null) => {
-    const label = getStatusLabel(currentStatusId);
-    if (label === "Pending") return "Start Task";
-    if (label === "In Progress") return "Mark as Done";
-    return null;
   };
 
   // ---- Stats ----
@@ -252,9 +260,8 @@ export default function TechnicianDashboard() {
           <div className="space-y-4">
             {requests.map((task) => {
               const priorityLabel = getPriorityLabel(task.Priority);
-              const nextStatusId = getNextStatusId(task.StatusID);
-              const nextActionLabel = getNextActionLabel(task.StatusID);
               const isUpdating = updatingId === String(task.ServiceRequestID);
+              const technicianStatuses = statuses.filter(s => s.IsAllowedForTechnician);
 
               return (
                 <Card key={String(task.ServiceRequestID)} className="group transition-all duration-300 hover:shadow-md">
@@ -309,29 +316,29 @@ export default function TechnicianDashboard() {
 
                       {/* Actions */}
                       <div className="flex gap-3 lg:min-w-[200px] lg:flex-col">
-                        {nextStatusId && nextActionLabel ? (
-                          <Button
-                            className="flex-1 gap-2"
-                            disabled={isUpdating}
-                            onClick={() =>
-                              handleUpdateStatus(String(task.ServiceRequestID), nextStatusId)
-                            }
-                          >
+                        <Select
+                          disabled={isUpdating}
+                          value={String(task.StatusID || "")}
+                          onValueChange={(val) => handleUpdateStatus(String(task.ServiceRequestID), val)}
+                        >
+                          <SelectTrigger className="w-full">
                             {isUpdating ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Updating...</span>
+                              </div>
                             ) : (
-                              nextActionLabel
+                              <SelectValue placeholder="Update Status" />
                             )}
-                            {!isUpdating && <ChevronRight className="h-4 w-4" />}
-                          </Button>
-                        ) : (
-                          <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                            <CheckCircle2 className="mb-1 h-6 w-6 text-emerald-500" />
-                            <span className="text-xs font-bold uppercase text-emerald-700">
-                              Task Closed
-                            </span>
-                          </div>
-                        )}
+                          </SelectTrigger>
+                          <SelectContent>
+                            {technicianStatuses.map((s) => (
+                              <SelectItem key={s.ServiceRequestStatusID} value={String(s.ServiceRequestStatusID)}>
+                                {s.ServiceRequestStatusName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </CardContent>

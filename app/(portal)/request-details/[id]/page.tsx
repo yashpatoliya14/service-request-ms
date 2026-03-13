@@ -85,8 +85,9 @@ export default function RequestDetails({ params }: PageProps) {
     if (!statusId) return "Pending";
     const sid = Number(statusId);
     if (sid === 1) return "Pending";
-    if (sid === 2) return "In Progress";
-    if (sid === 3) return "Completed";
+    if (sid === 2) return "Assigned";
+    if (sid === 3) return "In Progress";
+    if (sid === 4) return "Completed";
     return "Pending";
   };
 

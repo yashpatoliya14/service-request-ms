@@ -194,8 +194,9 @@ export default function UserRequestPortal() {
     if (!statusId) return "Pending";
     const id = Number(statusId);
     if (id === 1) return "Pending";
-    if (id === 2) return "In Progress";
-    if (id === 3) return "Completed";
+    if (id === 2) return "Assigned";
+    if (id === 3) return "In Progress";
+    if (id === 4) return "Completed";
     return "Pending";
   };
 

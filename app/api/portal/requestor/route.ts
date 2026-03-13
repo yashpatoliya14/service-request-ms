@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
                 Title:Title,
                 Description:Description,
                 Priority:Priority,
+                StatusID:1,
+                AssignedToID:null,
             }
         })
         if (requestor) {

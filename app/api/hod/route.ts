@@ -32,9 +32,13 @@ export async function POST(req: NextRequest) {
         const assignment = await prisma.serviceRequest.update({
             data:{
                 AssignedToID:BigInt(AssignedToID),
+                StatusID:2,
             },
             where:{
                 ServiceRequestID:BigInt(ServiceRequestID),
+            },
+            include:{
+                ServiceRequestStatus:true
             }
         })
         if (assignment) {
@@ -53,8 +57,13 @@ export async function POST(req: NextRequest) {
 // Get All Requests  
 export async function GET(req: NextRequest) {
     try {
-        //get all requests
-        const requests = await prisma.serviceRequest.findMany()
+        const requests = await prisma.serviceRequest.findMany({
+            include: {
+                ServiceRequestStatus: true,
+                Users: true,
+                ServiceRequestType: true
+            }
+        });
         if (requests) {
             return NextResponse.json({ success: true, message: "Get All Requests Successfull", data: [requests] } as IHodResponse, { status: 200 });
         } else {
