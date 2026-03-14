@@ -9,6 +9,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             where: {
                 ServiceRequestID: Number(id),
             },
+            include: {
+                Users: {
+                    select: {
+                        FullName: true,
+                        Role: true,
+                    }
+                }
+            },
             orderBy: {
                 Created: "asc",
             },

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         const assignment = await prisma.serviceRequest.update({
             data:{
                 AssignedToID:BigInt(AssignedToID),
-                StatusID:2,
+                StatusID:3,
             },
             where:{
                 ServiceRequestID:BigInt(ServiceRequestID),

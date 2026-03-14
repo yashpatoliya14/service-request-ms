@@ -32,10 +32,10 @@ export async function PATCH(req: NextRequest,{params}: { params: Promise<{ id: s
         const assignment = await prisma.serviceRequest.update({
             data:{
                 AssignedToID:BigInt(AssignedToID),
-                StatusID:2,
+                StatusID:3,
             },
             where:{
-                ServiceRequestID:Number(id),
+                ServiceRequestID:BigInt(id),
             },
             include:{
                 ServiceRequestStatus:true

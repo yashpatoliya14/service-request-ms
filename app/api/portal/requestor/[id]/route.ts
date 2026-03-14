@@ -25,6 +25,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         const requestor = await prisma.serviceRequest.findFirst({
             where: {
                 ServiceRequestID: BigInt(id),
+            },
+            include: {
+                ServiceRequestStatus: true,
+                ServiceRequestType: true,
+                ServiceDeptPerson: {
+                    include: {
+                        Users: true,
+                    }
+                }
             }
         })
         if (requestor) {

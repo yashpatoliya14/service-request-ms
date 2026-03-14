@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
         });
 
         const assignedToID = mapping ? mapping.ServicePersonID : null;
-        // set status to 2 (Assigned) if mapped, otherwise 1 (Pending)
-        const statusID = assignedToID ? 2 : 1;
+        // set status to 3 (In Progress) if mapped, otherwise 1 (Pending)
+        const statusID = assignedToID ? 3 : 1;
 
         //create a requestor
         const requestor = await prisma.serviceRequest.create({

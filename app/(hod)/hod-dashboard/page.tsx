@@ -140,7 +140,7 @@ export default function HODDashboard() {
         setRequests((prev) =>
           prev.map((req) =>
             String(req.ServiceRequestID) === String(selectedRequest.ServiceRequestID)
-              ? { ...req, AssignedToID: deptPersonId }
+              ? { ...req, AssignedToID: deptPersonId, StatusID: "3" }
               : req
           )
         );
@@ -371,23 +371,47 @@ export default function HODDashboard() {
                       </TableCell>
                       <TableCell className="text-right">
                         {isUnassigned(req) ? (
-                          <Button
-                            size="sm"
-                            className="gap-1"
-                            onClick={() => {
-                              setSelectedRequest(req);
-                              setIsAssignModalOpen(true);
-                            }}
-                          >
-                            <UserPlus className="h-3 w-3" />
-                            Assign
-                          </Button>
+                          status?.toLowerCase() !== "completed" && String(req.StatusID) !== "4" ? (
+                            <Button
+                              size="sm"
+                              className="gap-1"
+                              onClick={() => {
+                                setSelectedRequest(req);
+                                setIsAssignModalOpen(true);
+                              }}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                              Assign
+                            </Button>
+                          ) : (
+                            <Button asChild variant="ghost" size="icon" className="opacity-50 group-hover:opacity-100">
+                              <Link href={`/request-details/${req.ServiceRequestID}`}>
+                                <ArrowUpRight className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )
                         ) : (
-                          <Button asChild variant="ghost" size="icon" className="opacity-50 group-hover:opacity-100">
-                            <Link href={`/request-details/${req.ServiceRequestID}`}>
-                              <ArrowUpRight className="h-4 w-4" />
-                            </Link>
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            {status?.toLowerCase() !== "completed" && String(req.StatusID) !== "4" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1"
+                                onClick={() => {
+                                  setSelectedRequest(req);
+                                  setIsAssignModalOpen(true);
+                                }}
+                              >
+                                <UserCheck className="h-3 w-3" />
+                                Reassign
+                              </Button>
+                            )}
+                            <Button asChild variant="ghost" size="icon" className="opacity-50 group-hover:opacity-100">
+                              <Link href={`/request-details/${req.ServiceRequestID}`}>
+                                <ArrowUpRight className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
