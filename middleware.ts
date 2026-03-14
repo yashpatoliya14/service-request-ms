@@ -32,9 +32,11 @@ const ROLE_ROUTES: Record<string, string[]> = {
         "/admin-dashboard", "/dept-master", "/dept-person",
         "/department-person-master", "/request-type", "/service-type",
         "/status-master", "/type-mapping", "/request-mapping",
-        "/api/admin",
+        "/api/admin","/api/chat",
+        "/api/chat/:id",
         // Admin can also access HOD and portal routes
-        "/hod-dashboard", "/api/hod",
+        "/hod-dashboard", "/api/hod","/api/chat",
+        "/api/chat/:id",    
         "/portal-dashboard", "/request-details", "/technician", "/api/portal",
     ],
     hod: [
@@ -48,12 +50,17 @@ const ROLE_ROUTES: Record<string, string[]> = {
         "/portal-dashboard", "/request-details", "/api/portal",
         // Allow reading departments & request types for forms
         "/api/admin/department", "/api/admin/service-request-type",
+        "/api/portal/requestor","/api/chat",
+        "/api/chat/:id",
+
     ],
     technician: [
         "/portal-dashboard", "/request-details", "/technician", "/api/portal",
         // Allow reading departments & request types for forms
         "/api/admin/department", "/api/admin/service-request-type",
-        "/api/admin/status-master", "/api/auth/me","/api/portal/technician"
+        "/api/admin/status-master", "/api/auth/me","/api/portal/technician",
+        "/api/chat",
+        "/api/chat/:id",
     ],
 };
 

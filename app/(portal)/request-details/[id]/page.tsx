@@ -1,12 +1,12 @@
 "use client";
 
-import React, { use, useEffect, useState } from "react";
+import React, { use, useEffect, useState, useRef } from "react";
 import { ArrowLeft, MessageCircle, Send, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/apiClient";
-
+import { socket } from "@/lib/socket";
 // ---- Types ----
 interface ServiceRequest {
   ServiceRequestID: string;
@@ -46,6 +46,12 @@ export default function RequestDetails({ params }: PageProps) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [messages, setMessages] = useState<any[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   // ---- Fetch user info ----
   useEffect(() => {
@@ -80,6 +86,24 @@ export default function RequestDetails({ params }: PageProps) {
     fetchRequest();
   }, [id]);
 
+  //fetch previous messages
+  useEffect(() => {
+    const fetchMessages = async () => {
+      setLoading(true);
+      try {
+        const res = await apiClient.get<any[]>(`/api/chat/${id}`);
+        if (res.success && res.data) {
+          setMessages(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch messages:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMessages();
+  }, [id]);
+
   // ---- Status helper ----
   const getStatusLabel = (statusId: string | null) => {
     if (!statusId) return "Pending";
@@ -98,27 +122,37 @@ export default function RequestDetails({ params }: PageProps) {
     return "bg-amber-50 text-amber-600 border-amber-100";
   };
 
-  // ---- Send reply (placeholder — you can add a reply API later) ----
-  const handleSendReply = async () => {
-    if (!message.trim() || !user) return;
-    setSending(true);
-    try {
-      // Add reply to local state for now
-      const newReply: Reply = {
-        ReplyID: Date.now().toString(),
-        Message: message,
-        Created: new Date().toISOString(),
-        RepliedByID: user.userId,
-        StatusID: null,
-        Users: { FullName: user.fullName },
-      };
-      setReplies((prev) => [...prev, newReply]);
-      setMessage("");
-    } catch (err) {
-      console.error("Failed to send reply:", err);
-    } finally {
+  useEffect(() => {
+
+    socket.emit("join_request", id);
+
+    socket.on("receive_message", (data) => {
+      setMessages((prev) => [...prev, data]);
       setSending(false);
-    }
+    });
+
+    return () => {
+      socket.off("receive_message");
+    };
+
+  }, [id]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+  // ---- Send reply (placeholder — you can add a reply API later) ----
+  const sendMessage = () => {
+    if (!message.trim() || sending) return;
+    setSending(true);
+
+    socket.emit("send_message", {
+      message,
+      ReplyByID: user?.userId,
+      Status: 1,
+      ServiceRequestID: id,
+    });
+
+    setMessage("");
   };
 
   if (loading) {
@@ -184,7 +218,7 @@ export default function RequestDetails({ params }: PageProps) {
             </div>
 
             {/* Replies */}
-            {replies.map((reply) => {
+            {messages.map((reply) => {
               const isOwn = reply.RepliedByID === user?.userId;
               return (
                 <div
@@ -208,11 +242,12 @@ export default function RequestDetails({ params }: PageProps) {
               );
             })}
 
-            {replies.length === 0 && (
+            {messages.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-8">
                 No replies yet. Start the conversation below.
               </p>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Reply Box */}
@@ -222,13 +257,13 @@ export default function RequestDetails({ params }: PageProps) {
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSendReply()}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                 placeholder="Type your message..."
                 className="flex-1 bg-transparent border-none outline-none px-4 text-sm font-medium"
               />
               <Button
                 size="icon"
-                onClick={handleSendReply}
+                onClick={sendMessage}
                 disabled={!message.trim() || sending}
                 className="rounded-xl"
               >

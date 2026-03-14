@@ -52,14 +52,14 @@ model ServiceRequest {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ServiceRequestReply {
-  ReplyID          BigInt          @id @default(autoincrement())
-  Created          DateTime        @default(now()) @db.Timestamptz(6)
-  ServiceRequestID BigInt?
+  ReplyID          BigInt         @id @default(autoincrement())
+  Created          DateTime       @default(now()) @db.Timestamptz(6)
+  ServiceRequestID BigInt
   RepliedByID      BigInt?
   Message          String?
   StatusID         BigInt?
-  Users            Users?          @relation(fields: [RepliedByID], references: [UserID], onDelete: NoAction, onUpdate: NoAction)
-  ServiceRequest   ServiceRequest? @relation(fields: [ServiceRequestID], references: [ServiceRequestID], onDelete: NoAction, onUpdate: NoAction)
+  Users            Users?         @relation(fields: [RepliedByID], references: [UserID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceRequest   ServiceRequest @relation(fields: [ServiceRequestID], references: [ServiceRequestID], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

@@ -7,7 +7,10 @@ import {
   Clock,
   AlertCircle,
   Loader2,
+  MessageCircle,
 } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -339,6 +342,12 @@ export default function TechnicianDashboard() {
                             ))}
                           </SelectContent>
                         </Select>
+                        <Button asChild variant="outline" className="w-full gap-2 text-primary hover:text-primary">
+                          <Link href={`/request-details/${task.ServiceRequestID}`}>
+                            <MessageCircle className="h-4 w-4" />
+                            Open Chat
+                          </Link>
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
