@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm:next-dev\" \"npm:socket\"",
-    "next-dev": "next dev",
-    "socket": "npx tsx lib/socketServer.ts",
+    "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
