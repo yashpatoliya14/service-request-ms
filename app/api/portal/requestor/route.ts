@@ -26,6 +26,17 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { ServiceRequestTypeID, RequestorID, Title, Description, Priority } = body;
 
+        // check if auto-assignment mapping exists for this request type
+        const mapping = await prisma.serviceRequestTypeWisePerson.findFirst({
+            where: {
+                ServiceRequestTypeID: BigInt(ServiceRequestTypeID)
+            }
+        });
+
+        const assignedToID = mapping ? mapping.ServicePersonID : null;
+        // set status to 2 (Assigned) if mapped, otherwise 1 (Pending)
+        const statusID = assignedToID ? 2 : 1;
+
         //create a requestor
         const requestor = await prisma.serviceRequest.create({
             data: {
@@ -34,8 +45,8 @@ export async function POST(req: NextRequest) {
                 Title:Title,
                 Description:Description,
                 Priority:Priority,
-                StatusID:1,
-                AssignedToID:null,
+                StatusID:statusID,
+                AssignedToID:assignedToID,
             }
         })
         if (requestor) {

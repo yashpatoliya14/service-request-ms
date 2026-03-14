@@ -67,8 +67,6 @@ const sidebarConfigs = {
             { name: "Service Types", icon: <Settings2 className="h-4 w-4" />, href: "/service-type" },
             { name: "Status Master", icon: <Fingerprint className="h-4 w-4" />, href: "/status-master" },
             { name: "Type Mapping", icon: <Map className="h-4 w-4" />, href: "/type-mapping" },
-            { name: "Request Mapping", icon: <Map className="h-4 w-4" />, href: "/request-mapping" },
-            { name: "Person Master", icon: <Users className="h-4 w-4" />, href: "/department-person-master" },
         ],
     },
     portal: {

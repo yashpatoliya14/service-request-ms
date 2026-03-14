@@ -38,7 +38,7 @@ interface PageProps {
 
 export default function RequestDetails({ params }: PageProps) {
   const resolvedParams = use(params);
-  const id = resolvedParams.id;
+  const ServiceRequestID = resolvedParams.id;
 
   const [request, setRequest] = useState<ServiceRequest | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
@@ -73,7 +73,7 @@ export default function RequestDetails({ params }: PageProps) {
     const fetchRequest = async () => {
       setLoading(true);
       try {
-        const res = await apiClient.get<ServiceRequest[]>(`/api/portal/requestor/${id}`);
+        const res = await apiClient.get<ServiceRequest[]>(`/api/portal/requestor/${ServiceRequestID}`);
         if (res.success && res.data?.[0]) {
           setRequest(res.data[0]);
         }
@@ -84,14 +84,14 @@ export default function RequestDetails({ params }: PageProps) {
       }
     };
     fetchRequest();
-  }, [id]);
+  }, [ServiceRequestID]);
 
   //fetch previous messages
   useEffect(() => {
     const fetchMessages = async () => {
       setLoading(true);
       try {
-        const res = await apiClient.get<any[]>(`/api/chat/${id}`);
+        const res = await apiClient.get<any[]>(`/api/chat/${ServiceRequestID}`);
         if (res.success && res.data) {
           setMessages(res.data);
         }
@@ -102,7 +102,7 @@ export default function RequestDetails({ params }: PageProps) {
       }
     };
     fetchMessages();
-  }, [id]);
+  }, [ServiceRequestID]);
 
   // ---- Status helper ----
   const getStatusLabel = (statusId: string | null) => {
@@ -124,7 +124,8 @@ export default function RequestDetails({ params }: PageProps) {
 
   useEffect(() => {
 
-    socket.emit("join_request", id);
+    // join the room where both users join on same service request id 
+    socket.emit("join_request", ServiceRequestID);
 
     socket.on("receive_message", (data) => {
       setMessages((prev) => [...prev, data]);
@@ -135,11 +136,13 @@ export default function RequestDetails({ params }: PageProps) {
       socket.off("receive_message");
     };
 
-  }, [id]);
+  }, [ServiceRequestID]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+
   // ---- Send reply (placeholder — you can add a reply API later) ----
   const sendMessage = () => {
     if (!message.trim() || sending) return;
@@ -149,7 +152,7 @@ export default function RequestDetails({ params }: PageProps) {
       message,
       ReplyByID: user?.userId,
       Status: 1,
-      ServiceRequestID: id,
+      ServiceRequestID: ServiceRequestID,
     });
 
     setMessage("");
@@ -186,7 +189,7 @@ export default function RequestDetails({ params }: PageProps) {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Request #SR-{id}
+            Request SR-{ServiceRequestID}
           </h1>
           <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest">
             Conversation Timeline

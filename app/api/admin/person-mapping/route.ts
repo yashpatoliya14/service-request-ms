@@ -20,13 +20,27 @@ export async function POST(req: NextRequest) {
     try {
 
         const body = await req.json();
-        const { ServiceRequestTypeID, ServicePersonID } = body;
+        const { ServiceRequestTypeID, DeptPersonID } = body;
 
-        //create 
+        // Check if mapping already exists for this Request Type
+        const existingMapping = await prisma.serviceRequestTypeWisePerson.findFirst({
+            where: {
+                ServiceRequestTypeID: Number(ServiceRequestTypeID)
+            }
+        });
+
+        if (existingMapping) {
+            return NextResponse.json(
+                { success: false, message: "A mapping for this request type already exists", data: [] },
+                { status: 400 }
+            );
+        }
+
+        //create
         const personMapping = await prisma.serviceRequestTypeWisePerson.create({
             data: {
-                ServiceRequestTypeID: BigInt(ServiceRequestTypeID),
-                ServicePersonID: BigInt(ServicePersonID),
+                ServiceRequestTypeID: Number(ServiceRequestTypeID),
+                ServicePersonID: Number(DeptPersonID),
 
             }
         })
