@@ -117,7 +117,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 ServiceRequestID: BigInt(id),
             },
             data: {
-                StatusID: BigInt(StatusID),
+                StatusID: Number(StatusID),
             },
         });
 
