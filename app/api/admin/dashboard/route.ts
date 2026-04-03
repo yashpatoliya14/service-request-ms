@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
     try {
+        // One transaction = one connection; avoids many parallel TCP connects to the pooler
         const [
             totalUsers,
             totalDepartments,
@@ -14,7 +15,8 @@ export async function GET(req: NextRequest) {
             technicianCount,
             activeRequestTypes,
             statusCounts,
-        ] = await Promise.all([
+            statuses,
+        ] = await prisma.$transaction([
             prisma.users.count(),
             prisma.serviceDepartment.count(),
             prisma.serviceType.count(),
@@ -28,10 +30,8 @@ export async function GET(req: NextRequest) {
                 by: ["StatusID"],
                 _count: { ServiceRequestID: true },
             }),
+            prisma.serviceRequestStatus.findMany(),
         ]);
-
-        // Get status names for the grouped counts
-        const statuses = await prisma.serviceRequestStatus.findMany();
         const requestsByStatus = statusCounts.map((sc) => {
             const status = statuses.find((s) => s.ServiceRequestStatusID === sc.StatusID);
             return {
