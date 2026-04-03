@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/apiClient";
+import { getStatusLabel, getStatusBadge } from "@/lib/statusServices";
 
 // ---- Types ----
 interface ServiceRequest {
@@ -110,29 +111,12 @@ export default function UserRequestPortal() {
     priority: "1",
   });
 
-
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
-        if (res.success && res.data) {
-          setStatuses(res.data);
-        }
-        
-      } catch (err) {
-        console.error("Failed to fetch statuses:", err);
-      }
-    };
-    fetchStatuses();
-  }, []);
-  // ---- Fetch user info ----
+  // ---- Fetch user ----
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await apiClient.get<UserInfo[]>("/api/auth/me");
-        if (res.success && res.data?.[0]) {
-          setUser(res.data[0] as unknown as UserInfo);
-        }
+        if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserInfo);
       } catch (err) {
         console.error("Failed to fetch user:", err);
       }
@@ -140,7 +124,20 @@ export default function UserRequestPortal() {
     fetchUser();
   }, []);
 
-  // ---- Fetch departments + request types (for the form) ----
+  // ---- Fetch statuses ----
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
+        if (res.success) setStatuses(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch statuses:", err);
+      }
+    };
+    fetchStatuses();
+  }, []);
+
+  // ---- Fetch departments + request types ----
   useEffect(() => {
     const fetchFormData = async () => {
       try {
@@ -157,14 +154,11 @@ export default function UserRequestPortal() {
     fetchFormData();
   }, []);
 
-  // ---- Fetch user's own requests ----
+  // ---- Fetch user's requests ----
   const fetchRequests = async () => {
-    if (!user) return;
     setLoading(true);
     try {
-      const res = await apiClient.post<ServiceRequest[][]>("/api/portal/history", {
-        RequestorID: user.userId,
-      });
+      const res = await apiClient.get<ServiceRequest[][]>("/api/portal/history");
       if (res.success && res.data?.[0]) {
         setRequests(res.data[0]);
       } else {
@@ -179,9 +173,8 @@ export default function UserRequestPortal() {
   };
 
   useEffect(() => {
-    if (user) fetchRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    fetchRequests();
+  }, []);
 
   // ---- Create new request ----
   const handleCreateRequest = async () => {
@@ -225,18 +218,7 @@ export default function UserRequestPortal() {
     (t) => String(t.ServiceDeptID) === formData.deptId && t.IsActive
   );
 
-  const getStatusLabel = (statusId: string | null) => {
-    if (!statusId) return "Pending";
-    const status = statuses.find(s => s.ServiceRequestStatusID === Number(statusId))?.ServiceRequestStatusName;
-    if(status) return status;
-    return "Pending";
-  };
 
-  const getStatusBadge = (req: ServiceRequest) => {
-    const cssClass = req.ServiceRequestStatus?.ServiceRequestStatusCssClass || "bg-slate-100 text-slate-700 hover:bg-slate-100";
-    const label = req.ServiceRequestStatus?.ServiceRequestStatusName || getStatusLabel(req.StatusID);
-    return <Badge className={cssClass}>{label}</Badge>;
-  };
 
   // ---- Filter Logic ----
   const filteredRequests = requests.filter((req) => {
@@ -250,7 +232,7 @@ export default function UserRequestPortal() {
     // 2. Status Filter
     const matchesStatus =
       statusFilter === "all" ||
-      getStatusLabel(req.StatusID) === statusFilter;
+      getStatusLabel(req.StatusID, statuses) === statusFilter;
 
     // 3. Department Filter
     const matchesDept = 
@@ -480,7 +462,7 @@ export default function UserRequestPortal() {
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell>{getStatusBadge(req)}</TableCell>
+                    <TableCell>{getStatusBadge(req, statuses)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {(req.ServiceRequestStatus?.IsDefault === true || (!req.ServiceRequestStatus && !req.StatusID)) && (
@@ -493,12 +475,15 @@ export default function UserRequestPortal() {
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button asChild size="sm" className="gap-1">
+                        {!req.ServiceRequestStatus?.IsTerminal === true && (
+                          <Button asChild size="sm" className="gap-1">
                           <Link href={`/request-details/${req.ServiceRequestID}`}>
                             View Thread
                             <ChevronRight className="h-4 w-4" />
                           </Link>
                         </Button>
+                        )}
+                        
                       </div>
                     </TableCell>
                   </TableRow>

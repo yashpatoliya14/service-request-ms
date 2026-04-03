@@ -14,6 +14,7 @@ model ServiceDepartment {
   DeptName           String?
   CCEmails           String?
   ServiceDeptPerson  ServiceDeptPerson[]
+  ServiceRequest     ServiceRequest[]
   ServiceRequestType ServiceRequestType[]
 }
 
@@ -43,8 +44,10 @@ model ServiceRequest {
   Title                String?
   Description          String?
   Priority             Priority?
+  ServiceDepartmentID  BigInt?
   ServiceDeptPerson    ServiceDeptPerson?    @relation(fields: [AssignedToID], references: [DeptPersonID], onDelete: NoAction, onUpdate: NoAction)
   Users                Users?                @relation(fields: [RequestorID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "ServiceRequest_RequesterID_fkey")
+  ServiceDepartment    ServiceDepartment?    @relation(fields: [ServiceDepartmentID], references: [ServiceDeptID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequestType   ServiceRequestType?   @relation(fields: [ServiceRequestTypeID], references: [ServiceRequestTypeID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequestStatus ServiceRequestStatus? @relation(fields: [StatusID], references: [ServiceRequestStatusID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequestReply  ServiceRequestReply[]

@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/apiClient";
+import {  getStatusBadge } from "@/lib/statusServices";
 
 // ---- Types ----
 interface ServiceRequest {
@@ -63,27 +64,31 @@ export default function TechnicianDashboard() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // ---- Fetch user info & statuses ----
+  // ---- Fetch user ----
   useEffect(() => {
-    const fetchUserAndStatuses = async () => {
+    const fetchUser = async () => {
       try {
-        const [userRes, statusRes] = await Promise.all([
-          apiClient.get<UserInfo[]>("/api/auth/me"),
-          apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master")
-        ]);
-
-        if (userRes.success && userRes.data?.[0]) {
-          setUser(userRes.data[0] as unknown as UserInfo);
-        }
-
-        if (statusRes.success && statusRes.data) {
-          setStatuses(statusRes.data);
-        }
+        const res = await apiClient.get<UserInfo[]>("/api/auth/me");
+        if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserInfo);
       } catch (err) {
-        console.error("Failed to fetch initial data:", err);
+        console.error("Failed to fetch user:", err);
       }
     };
-    fetchUserAndStatuses();
+    fetchUser();
+  }, []);
+
+  // ---- Fetch statuses ----
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
+        if (res.success && res.data) setStatuses(res.data);
+        console.log(res.data);
+      } catch (err) {
+        console.error("Failed to fetch statuses:", err);
+      }
+    };
+    fetchStatuses();
   }, []);
 
   // ---- Fetch requests assigned to this technician ----
@@ -139,24 +144,7 @@ export default function TechnicianDashboard() {
   };
 
   // ---- Helpers ----
-  const getStatusLabel = (statusId: string | null) => {
-    if (!statusId) return "Unknown";
-    const id = Number(statusId);
-    const status = statuses.find(s => s.ServiceRequestStatusID === id);
-    if (status) return status.ServiceRequestStatusName;
-    return "Unknown";
-  };
 
-  const getStatusBadge = (statusId: string | null) => {
-    const id = Number(statusId);
-    const status = statuses.find(s => s.ServiceRequestStatusID === id);
-
-    return (
-      <Badge className={status?.ServiceRequestStatusCssClass || "bg-slate-100 text-slate-700 hover:bg-slate-100"}>
-        {getStatusLabel(statusId)}
-      </Badge>
-    );
-  };
 
   const getPriorityLabel = (priority: string | null) => {
     if (!priority) return null;
@@ -281,7 +269,7 @@ export default function TechnicianDashboard() {
                           <Badge variant="outline" className="font-mono bg-foreground text-background">
                             SR-{String(task.ServiceRequestID)}
                           </Badge>
-                          {getStatusBadge(task.StatusID)}
+                          {getStatusBadge({ StatusID: task.StatusID, ServiceRequestStatus: undefined }, statuses)}
                           {priorityLabel === "Urgent" && (
                             <Badge className="animate-pulse bg-rose-500 text-white hover:bg-rose-500">
                               Urgent

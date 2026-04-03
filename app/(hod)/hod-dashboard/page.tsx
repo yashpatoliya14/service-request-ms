@@ -41,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/apiClient";
+import { getStatusBadge, getStatusLabel, StatusInfo } from "@/lib/statusServices";
 import Link from "next/link";
 
 // ---- Types ----
@@ -68,15 +69,6 @@ interface DeptPerson {
   ServiceDepartment?: { DeptName: string } | null;
 }
 
-interface ServiceRequestStatus {
-  ServiceRequestStatusID: string;
-  ServiceRequestStatusName: string;
-  ServiceRequestStatusCssClass: string;
-  IsTerminal?: boolean | null;
-  IsDefault?: boolean | null;
-  IsAssigned?: boolean | null;
-}
-
 export default function HODDashboard() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [technicians, setTechnicians] = useState<DeptPerson[]>([]);
@@ -88,7 +80,7 @@ export default function HODDashboard() {
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
-  const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
+  const [statuses, setStatuses] = useState<StatusInfo[]>([]);
 
   // ---- Fetch all requests ----
   const fetchRequests = async () => {
@@ -110,7 +102,7 @@ export default function HODDashboard() {
 
   const fetchStatuses = async () => {
     try {
-      const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
+      const res = await apiClient.get<StatusInfo[]>("/api/admin/status-master");
       if (res.success && res.data) {
         setStatuses(res.data);
         
@@ -172,15 +164,7 @@ export default function HODDashboard() {
     }
   };
 
-  // ---- Helpers ----
-  const getStatusLabel = (statusId: string | null) => {
-    if (!statusId) return "Pending";
-    const id = Number(statusId);
-    if (statuses.find((s) => String(s.ServiceRequestStatusID) === String(id))) {
-      return statuses.find((s) => String(s.ServiceRequestStatusID) === String(id))?.ServiceRequestStatusName;
-    }
-    return "Pending";
-  };
+
 
   
 
@@ -203,7 +187,7 @@ export default function HODDashboard() {
       r.Users?.FullName?.toLowerCase().includes(q);
 
     // Status filter — use the embedded status name from the request object
-    const requestStatusName = r.ServiceRequestStatus?.ServiceRequestStatusName || getStatusLabel(r.StatusID);
+    const requestStatusName = r.ServiceRequestStatus?.ServiceRequestStatusName || getStatusLabel(r.StatusID, statuses);
     const matchesStatus =
         statusFilter === "all" ||
         requestStatusName === statusFilter;
@@ -359,6 +343,7 @@ export default function HODDashboard() {
                   const techName = getTechName(req.AssignedToID);
                   return (
                     <TableRow key={String(req.ServiceRequestID)} className="group">
+                      {/* sr number */}
                       <TableCell>
                         <div className="space-y-1">
                           <Badge variant="outline" className="font-mono text-xs">
@@ -370,9 +355,13 @@ export default function HODDashboard() {
                           </p>
                         </div>
                       </TableCell>
+                      
+                      {/* requester name */}
                       <TableCell className="font-medium text-muted-foreground">
                         {req.Users?.FullName || "—"}
                       </TableCell>
+
+                      {/* priority */}
                       <TableCell>
                         <Badge
                           className={
@@ -388,13 +377,13 @@ export default function HODDashboard() {
                           {req.Priority.toLowerCase()}
                         </Badge>
                       </TableCell>
+                      
+                      {/* status */}
                       <TableCell>
-                        <Badge
-                          className={req.ServiceRequestStatus?.ServiceRequestStatusCssClass || "bg-slate-100 text-slate-700 hover:bg-slate-100"}
-                        >
-                          {req.ServiceRequestStatus?.ServiceRequestStatusName}
-                        </Badge>
+                        {getStatusBadge(req,statuses)}
                       </TableCell>
+
+                      {/* assigned tech */}
                       <TableCell>
                         {techName ? (
                           <div className="flex items-center gap-2 text-emerald-600">

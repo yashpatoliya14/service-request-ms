@@ -105,15 +105,13 @@ export async function GET(req: NextRequest) {
             }
         })
 
-
         if(!findPersonnel){
             return NextResponse.json({ success: false, message: "Unauthorized", data: [] }, { status: 401 });
         }
         const requests = await prisma.serviceRequest.findMany({
             where: {
-                ServiceRequestType: {
-                    ServiceDeptID: findPersonnel.ServiceDeptID,
-                },
+                ServiceDepartmentID:findPersonnel.ServiceDepartment?.ServiceDeptID,
+                
             },
             include: {
                 ServiceRequestStatus: true,

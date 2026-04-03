@@ -5,6 +5,7 @@ import { ArrowLeft, MessageCircle, Send, Clock, Loader2, User, AlertCircle } fro
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { toast } from "react-hot-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Select, 
@@ -14,6 +15,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/apiClient";
+import { getStatusLabel, getStatusClass, StatusInfo, getStatusBadge } from "@/lib/statusServices";
 import { socket } from "@/lib/socket";
 // ---- Types ----
 interface ServiceRequest {
@@ -39,13 +41,6 @@ interface ServiceRequest {
   } | null;
 }
 
-interface ServiceRequestStatus {
-  ServiceRequestStatusID: number;
-  ServiceRequestStatusName: string;
-  ServiceRequestStatusCssClass: string;
-  IsTerminal?: boolean | null;
-  IsDefault?: boolean | null;
-}
 
 interface Reply {
   ReplyID: string;
@@ -71,7 +66,7 @@ export default function RequestDetails({ params }: PageProps) {
   const ServiceRequestID = resolvedParams.id;
 
   const [request, setRequest] = useState<ServiceRequest | null>(null);
-  const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
+  const [statuses, setStatuses] = useState<StatusInfo[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [user, setUser] = useState<UserInfo | null>(null);
   const [mappings, setMappings] = useState<any[]>([]);
@@ -106,7 +101,7 @@ export default function RequestDetails({ params }: PageProps) {
   useEffect(() => {
     const fetchStatuses = async () => {
       try {
-        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
+        const res = await apiClient.get<StatusInfo[]>("/api/admin/status-master");
         if (res.success && res.data) {
           setStatuses(res.data);
         }
@@ -182,9 +177,11 @@ export default function RequestDetails({ params }: PageProps) {
         const res = await apiClient.get<any[]>(`/api/chat/${ServiceRequestID}`);
         if (res.success && res.data) {
           setMessages(res.data);
+        }else{
+          toast.error(res.message);
         }
       } catch (err) {
-        console.error("Failed to fetch messages:", err);
+        toast.error(`Failed to fetch messages ${err}`);
       } finally {
         setLoading(false);
       }
@@ -192,22 +189,7 @@ export default function RequestDetails({ params }: PageProps) {
     fetchMessages();
   }, [ServiceRequestID]);
 
-  // ---- Status helper ----
-  const getStatusLabel = (statusId: string | null) => {
-    if (!statusId) return "Pending";
-    const id = Number(statusId);
-    const status = statuses.find(s => s.ServiceRequestStatusID === id);
-    if (status) return status.ServiceRequestStatusName;
-    return "Pending";
-  };
 
-  const getStatusClass = (statusId: string | null) => {
-    if (!statusId) return "bg-slate-100 text-slate-700 hover:bg-slate-100";
-    const id = Number(statusId);
-    const status = statuses.find(s => s.ServiceRequestStatusID === id);
-    if (status && status.ServiceRequestStatusCssClass) return status.ServiceRequestStatusCssClass;
-    return "bg-slate-100 text-slate-700 hover:bg-slate-100";
-  };
 
   useEffect(() => {
     // join the room where both users join on same service request id 
@@ -431,9 +413,7 @@ export default function RequestDetails({ params }: PageProps) {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-muted-foreground uppercase">Status</span>
-              <Badge className={`text-[10px] px-2 py-1 font-bold uppercase ${request.ServiceRequestStatus?.ServiceRequestStatusCssClass || getStatusClass(request.StatusID)}`}>
-                {request.ServiceRequestStatus?.ServiceRequestStatusName || getStatusLabel(request.StatusID)}
-              </Badge>
+              {getStatusBadge(request, statuses)}
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-muted-foreground uppercase">Type</span>

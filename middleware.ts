@@ -14,7 +14,7 @@ const PUBLIC_PATHS = new Set([
 const AUTHENTICATED_PATHS = new Set(["/api/auth/me", "/api/auth/logout"]);
 
 // Shared route groups to avoid repetition
-const PORTAL_ROUTES = ["/portal-dashboard", "/request-details", "/technician", "/api/portal"];
+const PORTAL_ROUTES = ["/portal-dashboard", "/request-details", "/technician", "/api/portal","/api/chat/:id","/api/chat"];
 const ADMIN_READ_ROUTES = ["/api/admin/department", "/api/admin/service-request-type"];
 
 const ROLE_ROUTES: Record<string, string[]> = {
@@ -24,12 +24,14 @@ const ROLE_ROUTES: Record<string, string[]> = {
         "/status-master", "/type-mapping", "/request-mapping",
         "/api/admin",
         "/hod-dashboard", "/api/hod",
+        "/api/chat",
         ...PORTAL_ROUTES,
     ],
     hod: [
         "/hod-dashboard", "/api/hod",
         "/api/admin/person-master",
         "/api/admin/status-master",
+        "/api/chat",
         ...PORTAL_ROUTES,
         ...ADMIN_READ_ROUTES,
     ],
@@ -38,11 +40,16 @@ const ROLE_ROUTES: Record<string, string[]> = {
         "/api/admin/status-master",
         "/api/admin/department",
         "/api/admin/service-request-type",
+        "/api/chat",
+        "/api/chat/:id",
         ...PORTAL_ROUTES,
         ...ADMIN_READ_ROUTES,
     ],
     technician: [
         "/api/admin/status-master", "/api/portal/technician",
+        "/api/admin/person-mapping",
+        "/api/chat",
+        "/api/chat/:id",
         ...PORTAL_ROUTES,
         ...ADMIN_READ_ROUTES,
     ],

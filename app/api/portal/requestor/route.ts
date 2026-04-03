@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     try {
 
         const body = await req.json();
-        const { ServiceRequestTypeID, RequestorID, Title, Description, Priority } = body;
+        const { ServiceRequestTypeID, RequestorID, Title, Description, Priority,ServiceDepartmentID } = body;
         const normalizePriority = Priority.toString().toUpperCase();
         // check if auto-assignment mapping exists for this request type
         const mapping = await prisma.serviceRequestTypeWisePerson.findFirst({
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
                 Priority:normalizePriority,
                 StatusID:statusID,
                 AssignedToID:assignedToID,
+                ServiceDepartmentID:BigInt(ServiceDepartmentID),
             }
         })
         if (requestor) {

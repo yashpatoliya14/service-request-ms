@@ -41,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/apiClient";
+import {  getStatusBadge } from "@/lib/statusServices";
 import Link from "next/link";
 
 // ---- Types ----
@@ -121,14 +122,12 @@ export default function PortalDashboard() {
     priority: "Low",
   });
 
-  // ---- Fetch user info ----
+  // ---- Fetch user ----
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const res = await apiClient.get<UserInfo[]>("/api/auth/me");
-        if (res.success && res.data?.[0]) {
-          setUser(res.data[0] as unknown as UserInfo);
-        }
+        if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserInfo);
       } catch (err) {
         console.error("Failed to fetch user:", err);
       }
@@ -136,18 +135,29 @@ export default function PortalDashboard() {
     fetchUser();
   }, []);
 
-  // ---- Fetch departments + request types (for the form) ----
+  // ---- Fetch statuses ----
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
+        if (res.success) setStatuses(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch statuses:", err);
+      }
+    };
+    fetchStatuses();
+  }, []);
+
+  // ---- Fetch departments + request types ----
   useEffect(() => {
     const fetchFormData = async () => {
       try {
-        const [deptRes, typeRes, statusRes] = await Promise.all([
+        const [deptRes, typeRes] = await Promise.all([
           apiClient.get<Department[]>("/api/admin/department"),
           apiClient.get<RequestType[]>("/api/admin/service-request-type"),
-          apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master"),
         ]);
         if (deptRes.success) setDepartments(deptRes.data || []);
         if (typeRes.success) setRequestTypes(typeRes.data || []);
-        if (statusRes.success) setStatuses(statusRes.data || []);
       } catch (err) {
         console.error("Failed to fetch form data:", err);
       }
@@ -160,9 +170,7 @@ export default function PortalDashboard() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await apiClient.post<ServiceRequest[][]>("/api/portal/history", {
-        RequestorID: user.userId,
-      });
+      const res = await apiClient.get<ServiceRequest[][]>("/api/portal/requests");
       if (res.success && res.data?.[0]) {
         setRequests(res.data[0]);
       } else {
@@ -173,20 +181,8 @@ export default function PortalDashboard() {
       setRequests([]);
     } finally {
       setLoading(false);
-    }
+    } 
   };
- useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
-        if (res.success) setStatuses(res.data || []);
-        console.log(res.data);
-      } catch (err) {
-        console.error("Failed to fetch statuses:", err);
-      }
-    };
-    fetchStatuses();
-  }, []);
 
   useEffect(() => {
     if (user) fetchRequests();
@@ -204,6 +200,7 @@ export default function PortalDashboard() {
         Title: formData.subject,
         Description: formData.description,
         Priority: formData.priority,
+        ServiceDepartmentID: formData.deptId,
       });
       if (res.success) {
         setIsModalOpen(false);
@@ -250,23 +247,7 @@ export default function PortalDashboard() {
     return matchSearch && matchStatus && matchDept;
   });
 
-  const getStatusLabel = (statusId: string | null) => {
-    if (!statusId) return "Pending";
 
-    const status = statuses.find(s => s.ServiceRequestStatusID === Number(statusId))?.ServiceRequestStatusName;
-    
-    if(status) return status;
-
-    return "Pending";
-  };
-
-  const getStatusBadge = (req: ServiceRequest) => {
-    return (
-      <Badge className={req.ServiceRequestStatus?.ServiceRequestStatusCssClass || "bg-slate-100 text-slate-700 hover:bg-slate-100"}>
-        {req.ServiceRequestStatus?.ServiceRequestStatusName || getStatusLabel(req.StatusID)}
-      </Badge>
-    );
-  };
 
   const defaultCount = requests.filter((r) => r.ServiceRequestStatus?.IsDefault === true || (!r.ServiceRequestStatus && !r.StatusID)).length;
   const terminalCount = requests.filter((r) => r.ServiceRequestStatus?.IsTerminal === true).length;
@@ -509,7 +490,7 @@ export default function PortalDashboard() {
                         {req.ServiceRequestType?.RequestTypeName || "—"}
                       </span>
                     </TableCell>
-                    <TableCell>{getStatusBadge(req)}</TableCell>
+                    <TableCell>{getStatusBadge(req, statuses)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         {(req.ServiceRequestStatus?.IsDefault === true || (!req.ServiceRequestStatus && !req.StatusID)) && (

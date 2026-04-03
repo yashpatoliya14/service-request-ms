@@ -1,3 +1,4 @@
+import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -14,19 +15,22 @@ interface IPortalHistoryResponse {
 }
 
 // Get All Requests  
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
     try {
-        const user = await req.json();
+        const user = getDetailsFromToken(req);
+        if (!user) {
+            return NextResponse.json({ success: false, message: "User not found", data: [] }, { status: 404 });
+        }
 
         //get all requests
         const requests = await prisma.serviceRequest.findMany({
             where: {
-                RequestorID: BigInt(user.RequestorID),
+                RequestorID: BigInt(user.userId),
             },
             include: {
                 ServiceRequestStatus: true,
                 ServiceRequestType: {
-                    include: {
+                    include: { 
                         ServiceDepartment: true
                     }
                 }
