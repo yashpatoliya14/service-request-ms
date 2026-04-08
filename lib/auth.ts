@@ -15,7 +15,7 @@ export interface TokenPayload {
 /**
  * Generates a JWT token for a user
  */
-export function generateToken(payload: { userId: string; email: string; role: string; fullName?: string; username?: string }): string {
+export function generateToken(payload: { userId: string; role: string; }): string {
     return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_TOKEN_EXPIRY });
 }
 

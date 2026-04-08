@@ -12,6 +12,7 @@ interface ISignupBody {
     IsVerified: boolean;
     Password: string;
     Username: string;
+    ProfileImageUrl: string;
 }
 
 interface ISignupResponse {
@@ -25,7 +26,6 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const { FullName, Email, Phone, ProfilePhoto, Password }: ISignupBody = body;
-        console.log(body);
         // Check if user already exists
         const existingUser = await prisma.users.findFirst({
             where: {  Email }

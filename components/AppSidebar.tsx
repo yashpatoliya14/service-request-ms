@@ -20,6 +20,7 @@ import {
     ChevronRight,
     Sparkles,
     Loader2,
+    User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,17 +35,19 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiClient } from "@/lib/apiClient";
 import { getCookie } from "@/lib/cookie";
+import { AvatarImage } from "@radix-ui/react-avatar";
 
 interface SidebarProps {
     variant: "admin" | "portal" | "hod";
 }
 
 interface UserInfo {
-    userId: string;
-    email: string;
-    role: string;
-    fullName: string;
-    username: string;
+    UserID: string;
+    Email: string;
+    Role: string;
+    FullName: string;
+    Username: string;
+    ProfilePhoto?: string;
 }
 
 const sidebarConfigs = {
@@ -61,6 +64,7 @@ const sidebarConfigs = {
             { name: "Service Types", icon: <Settings2 className="h-4 w-4" />, href: "/service-type" },
             { name: "Status Master", icon: <Fingerprint className="h-4 w-4" />, href: "/status-master" },
             { name: "Type Mapping", icon: <Map className="h-4 w-4" />, href: "/type-mapping" },
+            { name: "Profile", icon: <User className="h-4 w-4" />, href: "/profile" },
         ]
     },
     portal: {
@@ -81,6 +85,7 @@ const sidebarConfigs = {
         menuLabel: "Management",
         items: [
             { name: "Department Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, href: "/hod-dashboard" },
+            { name: "Profile", icon: <User className="h-4 w-4" />, href: "/profile" },
         ]
     },
 };
@@ -96,7 +101,7 @@ export default function AppSidebar({ variant }: SidebarProps) {
         setRole(userRole);
     }, []);
 
-    // Filter items based on role — only technicians see "Technician View"
+    // Filter items based on role - only technicians see "Technician View"
     const filteredItems = variant === "portal"
         ? config.items.filter((item) => {
             if(role === "technician") return item.href === "/technician";
@@ -136,25 +141,25 @@ export default function AppSidebar({ variant }: SidebarProps) {
         }
     };
 
-    // Get user initials from fullName or email
+    // Get user initials from FullName or email
     const getInitials = () => {
-        if (user?.fullName) {
-            return user.fullName
+        if (user?.FullName) {
+            return user.FullName
                 .split(" ")
                 .map((n) => n[0])
                 .join("")
                 .toUpperCase()
                 .slice(0, 2);
         }
-        if (user?.email) {
-            return user.email.charAt(0).toUpperCase();
+        if (user?.Email) {
+            return user.Email.charAt(0).toUpperCase();
         }
         return variant === "admin" ? "SA" : variant === "hod" ? "HD" : "US";
     };
 
     // Get role display label
     const getRoleLabel = () => {
-        const role = user?.role?.toLowerCase();
+        const role = user?.Role?.toLowerCase();
         if (role === "admin") return "Administrator";
         if (role === "hod") return "Department Head";
         return "User";
@@ -236,16 +241,20 @@ export default function AppSidebar({ variant }: SidebarProps) {
                 <div className="p-3">
                     <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-sidebar-accent/50 px-3 py-2.5">
                         <Avatar className="h-8 w-8 shrink-0 border-2 border-primary/20">
-                            <AvatarFallback className="bg-primary/10 text-[10px] font-semibold text-primary">
-                                {getInitials()}
-                            </AvatarFallback>
+                            {user?.ProfilePhoto ? (
+                                <AvatarImage src={user.ProfilePhoto} alt={user.FullName || user.Username} />
+                            ) : (
+                                <AvatarFallback className="bg-primary/10 text-[10px] font-semibold text-primary">
+                                    {getInitials()}
+                                </AvatarFallback>
+                            )}
                         </Avatar>
                         <div className="flex-1 min-w-0">
                             <p className="truncate text-sm font-semibold text-sidebar-foreground leading-tight">
-                                {user?.fullName || user?.username || "Loading..."}
+                                {user?.FullName || user?.Username || "Loading..."}
                             </p>
                             <p className="truncate text-[11px] text-sidebar-foreground/50 leading-tight">
-                                {user?.email || "—"} · <span className="font-medium text-primary">{getRoleLabel()}</span>
+                                {user?.Email || "—"} · <span className="font-medium text-primary">{getRoleLabel()}</span>
                             </p>
                         </div>
                     </div>

@@ -122,24 +122,7 @@ export default function SignupPage() {
                     </CardHeader>
                     <CardContent>
                         <form noValidate action={formAction} className="space-y-5">
-                            {/* Profile Photo */}
-                            <div className="flex flex-col items-center gap-3">
-                                <button
-                                    type="button"
-                                    className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border bg-muted/50 transition-all hover:border-primary hover:bg-muted"
-                                >
-                                    <Camera className="h-6 w-6 text-muted-foreground transition-colors group-hover:text-primary" />
-                                </button>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    id="profilePhoto"
-                                />
-                                <span className="text-xs text-muted-foreground">
-                                    Upload profile photo (optional)
-                                </span>
-                            </div>
+                           
 
                             {/* Full Name */}
                             <div className="space-y-2">

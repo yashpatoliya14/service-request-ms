@@ -8,7 +8,8 @@ const PUBLIC_PATHS = new Set([
     "/", "/login", "/signup", "/verify-otp", "/reset-password", "/new-password",
     "/api/auth/login", "/api/auth/signup", "/api/auth/logout", "/api/auth/verify_otp",
     "/api/auth/send_reset_otp", "/api/auth/reset_password", "/api/auth/resend_otp",
-    "/api/auth/is_dept_person"
+    "/api/auth/is_dept_person",
+    "/profile"
 ]);
 
 const AUTHENTICATED_PATHS = new Set(["/api/auth/me", "/api/auth/logout"]);
