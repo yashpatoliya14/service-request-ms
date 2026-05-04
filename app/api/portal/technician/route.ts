@@ -28,6 +28,14 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+        // Validate userId exists
+        if (!userDetail.userId) {
+            return NextResponse.json(
+                { success: false, message: "Invalid user ID", data: [] },
+                { status: 400 }
+            );
+        }
+
         // Find the technician's DeptPerson record
         const personnel = await prisma.serviceDeptPerson.findFirst({
             where: {

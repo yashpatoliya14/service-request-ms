@@ -40,11 +40,12 @@ interface ServiceRequest {
 }
 
 interface UserInfo {
-  userId: string;
-  email: string;
-  role: string;
-  fullName: string;
-  username: string;
+  UserID: string;
+  Email: string;
+  Role: string;
+  FullName: string;
+  Username: string;
+  ProfilePhoto?: string;
 }
 
 interface ServiceRequestStatus {
@@ -69,6 +70,7 @@ export default function TechnicianDashboard() {
     const fetchUser = async () => {
       try {
         const res = await apiClient.get<UserInfo[]>("/api/auth/me");
+
         if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserInfo);
       } catch (err) {
         console.error("Failed to fetch user:", err);
@@ -96,9 +98,10 @@ export default function TechnicianDashboard() {
     if (!user) return;
     setLoading(true);
     try {
+      
       // Try fetching by technician's user ID
       const res = await apiClient.get<ServiceRequest[][]>(
-        `/api/portal/technician/${user.userId}`
+        `/api/portal/technician/${user.UserID}`
       );
       if (res.success && res.data?.[0]) {
         setRequests(res.data[0]);

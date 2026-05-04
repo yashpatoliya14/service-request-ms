@@ -63,7 +63,7 @@ const ROLE_DASHBOARD: Record<string, string> = {
     technician: "/portal-dashboard",
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const isApiRequest = pathname.startsWith("/api/");
     const token = request.cookies.get("auth_token")?.value;

@@ -54,7 +54,6 @@ export async function PATCH(req: NextRequest) {
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
-
         // get from dept person
         const deptPerson = await prisma.serviceDeptPerson.findUnique({
             where: {
