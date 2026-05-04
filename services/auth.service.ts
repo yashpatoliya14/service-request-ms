@@ -1,14 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-
-// Types
-export interface UserProfile {
-  UserID: string;
-  Email: string;
-  Role: string;
-  FullName: string;
-  Username: string;
-  ProfilePhoto?: string;
-}
+import { UserProfile } from "@/types/common";
 
 export interface LoginCredentials {
   email: string;

@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-import { ServiceRequest, ServiceRequestStatus } from "./technician.service";
+import { ServiceRequest, ServiceRequestStatus } from "@/types/common";
 
 // Types
 export interface DashboardStats {

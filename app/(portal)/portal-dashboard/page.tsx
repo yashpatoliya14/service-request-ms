@@ -82,21 +82,9 @@ interface Department {
   DeptName: string;
 }
 
-interface RequestType {
-  ServiceRequestTypeID: string;
-  RequestTypeName: string;
-  ServiceDeptID: string | null;
-  DefaultPriority: number | null;
-  IsActive: boolean | null;
-}
+import { UserProfile, ServiceRequestType } from "@/types/common";
 
-interface UserInfo {
-  UserID: string;
-  email: string;
-  role: string;
-  fullName: string;
-  username: string;
-}
+interface RequestType extends ServiceRequestType {}
 
 export default function PortalDashboard() {
   // ---- State ----
@@ -104,7 +92,7 @@ export default function PortalDashboard() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [requestTypes, setRequestTypes] = useState<RequestType[]>([]);
   const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
 
 
   const [loading, setLoading] = useState(true);
@@ -272,7 +260,7 @@ export default function PortalDashboard() {
             <h1 className="text-3xl font-bold tracking-tight">Portal Dashboard</h1>
           </div>
           <p className="text-muted-foreground">
-            Welcome back, {user?.fullName || "User"}! Raise and track your service requests.
+            Welcome back, {user?.FullName || "User"}! Raise and track your service requests.
           </p>
         </div>
 

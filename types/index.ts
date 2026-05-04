@@ -1,17 +1,17 @@
-// Re-export all types from services
+// Export all common types
+export * from './common';
+
+// Re-export service-specific types (excluding conflicts)
 export * from '../services/auth.service';
-export * from '../services/technician.service';
-export * from '../services/hod.service';
-export * from '../services/admin.service';
+export type { UpdateStatusData } from '../services/technician.service';
+export type { AssignTechnicianData, EvaluateRequestData } from '../services/hod.service';
+export type { DashboardStats, CreateServiceRequestTypeData, UpdateServiceRequestTypeData } from '../services/admin.service';
 
 // Common utility types
-export interface ApiResponse<T = any> {
+export interface PaginatedResponse<T = any> {
   success: boolean;
   message: string;
-  data: T;
-}
-
-export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
+  data: T[];
   pagination?: {
     page: number;
     limit: number;
@@ -47,12 +47,3 @@ export interface SortConfig {
   key: string;
   direction: 'asc' | 'desc';
 }
-
-// Loading states
-export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
-
-// Priority levels
-export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
-
-// User roles
-export type UserRole = 'admin' | 'hod' | 'technician' | 'user';

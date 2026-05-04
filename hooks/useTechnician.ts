@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { TechnicianService, ServiceRequest, ServiceRequestStatus, UpdateStatusData } from '@/services/technician.service';
+import { TechnicianService, UpdateStatusData } from '@/services/technician.service';
+import { ServiceRequest, ServiceRequestStatus } from '@/types/common';
 import { useApi, useMutation, useRealTimeApi } from './useApi';
 import { useAuth } from './useAuth';
 

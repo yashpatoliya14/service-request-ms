@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { HODService, DeptPerson, AssignTechnicianData, EvaluateRequestData } from '@/services/hod.service';
+import { HODService, AssignTechnicianData, EvaluateRequestData } from '@/services/hod.service';
+import { DeptPerson } from '@/types/common';
 import { useApi, useMutation, useRealTimeApi } from './useApi';
 import { useRequestStatuses } from './useTechnician';
 

@@ -1,33 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-
-// Types
-export interface ServiceRequest {
-  ServiceRequestID: string;
-  Title: string;
-  Description: string;
-  Priority: string;
-  StatusID: string | null;
-  Created: string;
-  ServiceRequestTypeID: string | null;
-  RequestorID: string | null;
-  AssignedToID: string | null;
-  Users?: { FullName: string } | null;
-  ServiceRequestType?: { RequestTypeName: string } | null;
-  ServiceRequestStatus?: {
-    ServiceRequestStatusName: string;
-    IsTerminal: boolean;
-  } | null;
-}
-
-export interface ServiceRequestStatus {
-  ServiceRequestStatusID: number;
-  ServiceRequestStatusName: string;
-  IsAllowedForTechnician: boolean;
-  ServiceRequestStatusCssClass: string;
-  IsTerminal?: boolean | null;
-  IsDefault?: boolean | null;
-  IsAssigned?: boolean | null;
-}
+import { ServiceRequest, ServiceRequestStatus } from "@/types/common";
 
 export interface UpdateStatusData {
   ServiceRequestID: string;

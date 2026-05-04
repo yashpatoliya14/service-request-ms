@@ -1,14 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-import { ServiceRequest, ServiceRequestStatus } from "./technician.service";
-
-// Types
-export interface DeptPerson {
-  DeptPersonID: string;
-  UserID: string;
-  IsActive: boolean | null;
-  Users?: { FullName: string; Email: string; Role: string } | null;
-  ServiceDepartment?: { DeptName: string } | null;
-}
+import { ServiceRequest, ServiceRequestStatus, DeptPerson } from "@/types/common";
 
 export interface AssignTechnicianData {
   ServiceRequestID: string;
