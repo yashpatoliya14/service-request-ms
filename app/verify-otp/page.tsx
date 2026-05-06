@@ -10,6 +10,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { AuthService } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +44,7 @@ function VerifyOtpContent() {
         }
 
         try {
-            const res = await apiClient.post("/api/auth/verify_otp", { Email: email, Otp: otp, isForgotPassword });
+            const res = await AuthService.verifyOTP({ Email: email, Otp: otp, isForgotPassword });
             if (res.success && isForgotPassword) {
                 router.replace("/new-password?email=" + encodeURIComponent(email));
             } else if (res.success) {

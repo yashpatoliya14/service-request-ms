@@ -83,6 +83,7 @@ interface Department {
 }
 
 import { UserProfile, ServiceRequestType } from "@/types/common";
+import { AuthService } from "@/services/auth.service";
 import { UserInfo } from "os";
 
 interface RequestType extends ServiceRequestType {}
@@ -183,7 +184,7 @@ export default function PortalDashboard() {
     if (!formData.typeId || !formData.subject || !user) return;
     setSubmitting(true);
     try {
-      const res = await apiClient.post("/api/portal/requestor", {
+      const res = await AuthService.createRequest({
         ServiceRequestTypeID: formData.typeId,
         RequestorID: user.UserID,
         Title: formData.subject,

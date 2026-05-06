@@ -28,7 +28,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   }
 }
 
-export const apiClient = {
+export const apiClient = { 
   get<T>(url: string) {
     return request<T>('GET', url);
   },

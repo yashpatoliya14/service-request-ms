@@ -66,6 +66,35 @@ export class AuthService {
     }
   }
 
+  // Verify OTP
+  static async verifyOTP(data: { Email: string; Otp: string; isForgotPassword?: boolean }) {
+    try {
+      const response = await apiClient.post(`${this.BASE_PATH}/verify_otp`, data);
+      return response;
+    } catch (error) {
+      console.error("OTP verification failed:", error);
+      throw error;
+    }
+  }
+
+  // Create request
+  static async createRequest(data: {
+    ServiceRequestTypeID: string;
+    RequestorID: string;
+    Title: string;
+    Description: string;
+    Priority: string;
+    ServiceDepartmentID: string;
+  }) {
+    try {
+      const response = await apiClient.post("/api/portal/requestor", data);
+      return response;
+    } catch (error) {
+      console.error("Failed to create request:", error);
+      throw error;
+    }
+  }
+
   // Logout user
   static async logout() {
     try {
