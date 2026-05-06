@@ -83,6 +83,7 @@ interface Department {
 }
 
 import { UserProfile, ServiceRequestType } from "@/types/common";
+import { UserInfo } from "os";
 
 interface RequestType extends ServiceRequestType {}
 
@@ -114,8 +115,8 @@ export default function PortalDashboard() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await apiClient.get<UserInfo[]>("/api/auth/me");
-        if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserInfo);
+        const res = await apiClient.get<UserInfo<[]>[]>("/api/auth/me");
+        if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserProfile);
       } catch (err) {
         console.error("Failed to fetch user:", err);
       }

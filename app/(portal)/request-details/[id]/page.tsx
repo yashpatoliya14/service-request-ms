@@ -213,16 +213,6 @@ export default function RequestDetails({ params }: PageProps) {
       return;
     }
 
-    // Prepare state timeout in case the response event never returns
-    const timeoutId = setTimeout(() => {
-      setSending((isStillSending) => {
-        if (isStillSending) {
-          setError("Message delivery timeout. Please try sending again.");
-          return false;
-        }
-        return isStillSending;
-      });
-    }, 5000);
 
     socket.emit("send_message", {
       message,

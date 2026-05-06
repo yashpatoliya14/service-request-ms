@@ -83,12 +83,20 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     try {
         const { id } = await params;
 
-        //delete the requestor Data
+        // First delete related chat messages
+        await prisma.serviceRequestReply.deleteMany({
+            where: {
+                ServiceRequestID: BigInt(id),
+            }
+        });
+
+        // Then delete the request
         const requestor = await prisma.serviceRequest.delete({
             where: {
                 ServiceRequestID: BigInt(id),
             }
         })
+        
         if (requestor) {
             return NextResponse.json({ success: true, message: "Delete Requestor Successfull", data: requestor ? [requestor] : [] } as IRequestorResponse, { status: 200 });
         } else {
