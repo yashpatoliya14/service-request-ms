@@ -38,6 +38,9 @@ export const apiClient = {
   put<T>(url: string, body?: unknown) {
     return request<T>('PUT', url, body);
   },
+  patch<T>(url: string, body?: unknown) {
+    return request<T>('PATCH', url, body);
+  },
   delete<T>(url: string) {
     return request<T>('DELETE', url);
   },

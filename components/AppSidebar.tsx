@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getCookie } from "@/lib/cookie";
-import {AuthService} from "@/services/auth.service";
+import { apiClient } from "@/lib/apiClient";
 import { AvatarImage } from "@radix-ui/react-avatar";
 
 interface SidebarProps {
@@ -116,9 +116,9 @@ export default function AppSidebar({ variant }: SidebarProps) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const res = await AuthService.getProfile();
+                const res = await apiClient.get<UserInfo[]>("/api/auth/me");
                 if (res.success && res.data?.[0]) {
-                    setUser(res.data[0] as unknown as UserInfo);
+                    setUser(res.data[0]);
                 }
             } catch (err) {
                 console.error("Failed to fetch user info:", err);
@@ -130,7 +130,7 @@ export default function AppSidebar({ variant }: SidebarProps) {
     const handleLogout = async () => {
         try {
             setLoggingOut(true);
-            await AuthService.logout();
+            await apiClient.post("/api/auth/logout");
         } catch (err) {
             console.error("Logout error:", err);
         } finally {

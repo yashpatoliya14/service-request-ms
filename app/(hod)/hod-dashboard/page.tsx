@@ -77,7 +77,7 @@ export default function HODDashboard() {
   const [assigning, setAssigning] = useState<string | null>(null);
   const [isEvaluateModalOpen, setIsEvaluateModalOpen] = useState(false);
   const [evaluating, setEvaluating] = useState<string | null>(null);
-  const [closedStatus, setClosedStatus] = useState("closed");
+  const [closedStatus, setClosedStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -525,6 +525,18 @@ export default function HODDashboard() {
             <DialogDescription>
               Review and finalize this completed service request
             </DialogDescription>
+            <div className="flex justify-between items-center">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Request Details
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsEvaluateModalOpen(false)}
+              >
+                Cancel
+              </Button>
+            </div>
           </DialogHeader>
           <div className="space-y-3 py-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -562,9 +574,22 @@ export default function HODDashboard() {
                   <SelectValue placeholder="Select final status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="closed">Closed</SelectItem>
+                  {statuses.filter(s => s.IsTerminal === true).map((status) => (
+                    <SelectItem key={status.ServiceRequestStatusID} value={String(status.ServiceRequestStatusID)}>
+                      {status.ServiceRequestStatusName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button 
+                disabled={!closedStatus}
+                onClick={() => handleEvaluate(String(selectedRequest?.ServiceRequestID))}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Submit Evaluation
+              </Button>
             </div>
           </div>
         </DialogContent>
