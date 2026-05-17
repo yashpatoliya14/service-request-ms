@@ -2,10 +2,6 @@
 export * from './common';
 
 // Re-export service-specific types (excluding conflicts)
-export * from '../services/auth.service';
-export type { UpdateStatusData } from '../services/technician.service';
-export type { AssignTechnicianData, EvaluateRequestData } from '../services/hod.service';
-export type { DashboardStats, CreateServiceRequestTypeData, UpdateServiceRequestTypeData } from '../services/admin.service';
 
 // Common utility types
 export interface PaginatedResponse<T = any> {
