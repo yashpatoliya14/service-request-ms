@@ -9,7 +9,7 @@ interface IRequestorBody {
     Title: string;
     Description: string;
     Priority: string;
-    
+
 }
 
 interface IRequestorResponse {
@@ -23,18 +23,17 @@ interface IRequestorResponse {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { ServiceRequestTypeID, RequestorID, Title, Description, Priority, ServiceDepartmentID } = body;
+        const { ServiceRequestTypeID, RequestorID, Title, Description, ServiceDepartmentID } = body;
 
         // Validation
-        if (!ServiceRequestTypeID || !RequestorID || !Title || !Description || !Priority || !ServiceDepartmentID) {
-            return NextResponse.json({ 
-                success: false, 
-                message: "Missing required fields: ServiceRequestTypeID, RequestorID, Title, Description, Priority, ServiceDepartmentID", 
-                data: [] 
+        if (!ServiceRequestTypeID || !RequestorID || !Title || !Description || !ServiceDepartmentID) {
+            return NextResponse.json({
+                success: false,
+                message: "Missing required fields: ServiceRequestTypeID, RequestorID, Title, Description, Priority, ServiceDepartmentID",
+                data: []
             }, { status: 400 });
         }
 
-        const normalizePriority = Priority.toString().toUpperCase();
         // check if auto-assignment mapping exists for this request type
         const mapping = await prisma.serviceRequestTypeWisePerson.findFirst({
             where: {
@@ -49,14 +48,6 @@ export async function POST(req: NextRequest) {
             prisma.serviceRequestStatus.findFirst({ where: { IsDefault: true } }),
             prisma.serviceRequestStatus.findFirst({ where: { IsAssigned: true } }),
         ]);
-
-        // Log for debugging
-        console.log('Request creation debug:', {
-            ServiceRequestTypeID,
-            assignedToID,
-            defaultStatus: defaultStatus?.ServiceRequestStatusName,
-            assignedStatus: assignedStatus?.ServiceRequestStatusName
-        });
 
         // Set status based on assignment logic
         let statusID: number | undefined;
@@ -73,32 +64,36 @@ export async function POST(req: NextRequest) {
             console.log('No status found, using fallback');
             statusID = 1; // Assuming 1 is a fallback status ID
         }
-
+        const requestType = await prisma.serviceRequestType.findFirst({
+            where: {
+                ServiceRequestTypeID: BigInt(ServiceRequestTypeID)
+            }
+        })
         //create a requestor
         const requestor = await prisma.serviceRequest.create({
             data: {
-                ServiceRequestTypeID:BigInt(ServiceRequestTypeID),
-                RequestorID:BigInt(RequestorID),
-                Title:Title,
-                Description:Description,
-                Priority:normalizePriority,
-                StatusID:statusID,
-                AssignedToID:assignedToID,
-                ServiceDepartmentID:BigInt(ServiceDepartmentID),
+                ServiceRequestTypeID: BigInt(ServiceRequestTypeID),
+                RequestorID: BigInt(RequestorID),
+                Title: Title,
+                Description: Description,
+                StatusID: statusID,
+                Priority: requestType?.DefaultPriority,
+                AssignedToID: assignedToID,
+                ServiceDepartmentID: BigInt(ServiceDepartmentID),
             }
         })
         if (requestor) {
-            const statusName = assignedToID && assignedStatus 
-                ? assignedStatus.ServiceRequestStatusName 
+            const statusName = assignedToID && assignedStatus
+                ? assignedStatus.ServiceRequestStatusName
                 : defaultStatus?.ServiceRequestStatusName || 'Unknown';
-            
-            const message = assignedToID 
+
+            const message = assignedToID
                 ? `Request created and assigned to personnel. Status: ${statusName}`
                 : `Request created successfully. Status: ${statusName}`;
-                
-            return NextResponse.json({ 
-                success: true, 
-                message, 
+
+            return NextResponse.json({
+                success: true,
+                message,
                 data: [requestor],
                 metadata: {
                     assignedTo: assignedToID ? 'Yes' : 'No',

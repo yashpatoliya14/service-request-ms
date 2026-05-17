@@ -1,22 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, Send, ChevronRight, FileText, Loader2 } from "lucide-react";
+import { Trash2, ChevronRight, FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -34,128 +24,22 @@ import {
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/apiClient";
 import { getStatusLabel, getStatusBadge } from "@/lib/statusServices";
-
-// ---- Types ----
-interface ServiceRequest {
-  ServiceRequestID: string;
-  Title: string;
-  Description: string;
-  Priority: string;
-  StatusID: string | null;
-  Created: string;
-  ServiceRequestTypeID: string | null;
-  RequestorID: string | null;
-  AssignedToID: string | null;
-  ServiceRequestType?: {
-    RequestTypeName: string;
-    ServiceDepartment?: { DeptName: string };
-  } | null;
-  ServiceRequestStatus?: {
-    ServiceRequestStatusName: string;
-    ServiceRequestStatusCssClass: string;
-    IsTerminal?: boolean | null;
-    IsDefault?: boolean | null;
-  } | null;
-}
-
-interface Department {
-  ServiceDeptID: string;
-  DeptName: string;
-}
-
-interface RequestType {
-  ServiceRequestTypeID: string;
-  RequestTypeName: string;
-  ServiceDeptID: string | null;
-  DefaultPriority: number | null;
-  IsActive: boolean | null;
-}
-
-interface ServiceRequestStatus {
-  ServiceRequestStatusID: number;
-  ServiceRequestStatusName: string;
-  ServiceRequestStatusCssClass: string;
-  IsDefault?: boolean | null;
-  IsTerminal?: boolean | null;
-  Sequence: number;
-}
-
-interface UserInfo {
-  userId: string;
-  email: string;
-  role: string;
-  fullName: string;
-  username: string;
-}
+import { ServiceRequest, ServiceRequestStatus, Department } from "@/types/common";
+import { fetchStatuses, fetchDepartments } from "@/services/request.service";
 
 export default function UserRequestPortal() {
   // ---- State ----
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [requestTypes, setRequestTypes] = useState<RequestType[]>([]);
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deptFilter, setDeptFilter] = useState("all");
 
-  const [formData, setFormData] = useState({
-    deptId: "",
-    typeId: "",
-    subject: "",
-    description: "",
-    priority: "1",
-  });
-
-  // ---- Fetch user ----
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await apiClient.get<UserInfo[]>("/api/auth/me");
-        if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserInfo);
-      } catch (err) {
-        console.error("Failed to fetch user:", err);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  // ---- Fetch statuses ----
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
-        if (res.success) setStatuses(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch statuses:", err);
-      }
-    };
-    fetchStatuses();
-  }, []);
-
-  // ---- Fetch departments + request types ----
-  useEffect(() => {
-    const fetchFormData = async () => {
-      try {
-        const [deptRes, typeRes] = await Promise.all([
-          apiClient.get<Department[]>("/api/admin/department"),
-          apiClient.get<RequestType[]>("/api/admin/service-request-type"),
-        ]);
-        if (deptRes.success) setDepartments(deptRes.data || []);
-        if (typeRes.success) setRequestTypes(typeRes.data || []);
-      } catch (err) {
-        console.error("Failed to fetch form data:", err);
-      }
-    };
-    fetchFormData();
-  }, []);
-
-  // ---- Fetch user's requests ----
-  const fetchRequests = async () => {
+  // ---- Fetch all initial data ----
+  const fetchRequestHistory = async () => {
     setLoading(true);
     try {
       const res = await apiClient.get<ServiceRequest[][]>("/api/portal/history");
@@ -173,32 +57,20 @@ export default function UserRequestPortal() {
   };
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    const loadAll = async () => {
+      const [ statusData, deptData] = await Promise.all([
+        fetchStatuses(),
+        fetchDepartments(),
+      ]);
 
-  // ---- Create new request ----
-  const handleCreateRequest = async () => {
-    if (!formData.typeId || !formData.subject || !user) return;
-    setSubmitting(true);
-    try {
-      const res = await apiClient.post("/api/portal/requestor", {
-        ServiceRequestTypeID: formData.typeId,
-        RequestorID: user.userId,
-        Title: formData.subject,
-        Description: formData.description,
-        Priority: formData.priority,
-      });
-      if (res.success) {
-        setIsModalOpen(false);
-        setFormData({ deptId: "", typeId: "", subject: "", description: "", priority: "1" });
-        await fetchRequests();
-      }
-    } catch (err) {
-      console.error("Failed to create request:", err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      setStatuses(statusData as unknown as ServiceRequestStatus[]);
+      setDepartments(deptData as Department[]);
+
+      await fetchRequestHistory();
+    };
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ---- Cancel / Delete a request ----
   const handleCancelRequest = async (id: string) => {
@@ -213,28 +85,18 @@ export default function UserRequestPortal() {
     }
   };
 
-  // ---- Helpers ----
-  const filteredTypes = requestTypes.filter(
-    (t) => String(t.ServiceDeptID) === formData.deptId && t.IsActive
-  );
-
-
-
   // ---- Filter Logic ----
   const filteredRequests = requests.filter((req) => {
-    // 1. Search Query
     const query = searchQuery.toLowerCase();
     const matchesSearch =
       !searchQuery ||
       req.Title?.toLowerCase().includes(query) ||
       String(req.ServiceRequestID).includes(query);
 
-    // 2. Status Filter
     const matchesStatus =
       statusFilter === "all" ||
       getStatusLabel(req.StatusID, statuses) === statusFilter;
 
-    // 3. Department Filter
     const matchesDept = 
       deptFilter === "all" ||
       req.ServiceRequestType?.ServiceDepartment?.DeptName === deptFilter;
@@ -255,106 +117,6 @@ export default function UserRequestPortal() {
           </div>
           <p className="text-muted-foreground">Track and manage your support tickets</p>
         </div>
-
-        {/* Create Request Dialog */}
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shadow-lg shadow-primary/25">
-              <Plus className="h-4 w-4" />
-              New Request
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-             <DialogHeader>
-              <DialogTitle>Submit New Request</DialogTitle>
-              <DialogDescription>Fill in the details to create a new support ticket.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Select Department</Label>
-                  <Select
-                    value={formData.deptId}
-                    onValueChange={(value) => setFormData({ ...formData, deptId: value, typeId: "" })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose Dept..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((d) => (
-                        <SelectItem key={String(d.ServiceDeptID)} value={String(d.ServiceDeptID)}>
-                          {d.DeptName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Service Type</Label>
-                  <Select
-                    value={formData.typeId}
-                    onValueChange={(value) => setFormData({ ...formData, typeId: value })}
-                    disabled={!formData.deptId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose Type..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredTypes.map((t) => (
-                        <SelectItem key={String(t.ServiceRequestTypeID)} value={String(t.ServiceRequestTypeID)}>
-                          {t.RequestTypeName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Subject / Issue Title</Label>
-                <Input
-                  placeholder="Briefly describe the problem"
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  placeholder="Provide details..."
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={(value) => setFormData({ ...formData, priority: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Low</SelectItem>
-                    <SelectItem value="2">Medium</SelectItem>
-                    <SelectItem value="3">High</SelectItem>
-                    <SelectItem value="4">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button onClick={handleCreateRequest} className="flex-1 gap-2" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {submitting ? "Submitting..." : "Submit Ticket"}
-                </Button>
-                <Button variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)}>
-                  Discard
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Stats */}

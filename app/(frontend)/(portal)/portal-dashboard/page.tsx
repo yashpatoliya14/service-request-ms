@@ -40,58 +40,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {  getStatusBadge } from "@/lib/statusServices";
+import { getStatusBadge } from "@/lib/statusServices";
 import Link from "next/link";
+import { fetchUser } from "@/services/user.service";
 
-// ---- Types ----
-interface ServiceRequest {
-  ServiceRequestID: string;
-  Title: string;
-  Description: string;
-  Priority: string;
-  StatusID: string | null;
-  Created: string;
-  ServiceRequestTypeID: string | null;
-  RequestorID: string | null;
-  AssignedToID: string | null;
-  ServiceRequestType?: {
-    RequestTypeName: string;
-    ServiceDepartment?: { DeptName: string };
-  } | null;
-  ServiceRequestStatus?: {
-    ServiceRequestStatusName: string;
-    ServiceRequestStatusCssClass: string;
-    IsTerminal?: boolean | null;
-    IsDefault?: boolean | null;
-  } | null;
-}
-
-interface ServiceRequestStatus {
-  ServiceRequestStatusID: number;
-  ServiceRequestStatusName: string;
-  ServiceRequestStatusCssClass: string;
-  IsAllowedForTechnician: boolean;
-  IsDefault?: boolean | null;
-  IsTerminal?: boolean | null;
-  Sequence: number;
-}
-
-interface Department {
-  ServiceDeptID: string;
-  DeptName: string;
-}
-
-import { UserProfile, ServiceRequestType } from "@/types/common";
+import { UserProfile, ServiceRequestType, ServiceRequest, ServiceRequestStatus, Department } from "@/types/common";
 import { apiClient } from "@/lib/apiClient";
-import { UserInfo } from "os";
-
-interface RequestType extends ServiceRequestType {}
+import { fetchStatuses, fetchDepartments, fetchRequestTypes } from "@/services/request.service";
 
 export default function PortalDashboard() {
   // ---- State ----
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [requestTypes, setRequestTypes] = useState<RequestType[]>([]);
+  const [requestTypes, setRequestTypes] = useState<ServiceRequestType[]>([]);
   const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
   const [user, setUser] = useState<UserProfile | null>(null);
 
@@ -102,61 +63,40 @@ export default function PortalDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [deptFilter, setDeptFilter] = useState("ALL");
-  
+
   const [formData, setFormData] = useState({
     deptId: "",
     typeId: "",
     subject: "",
     description: "",
-    priority: "Low",
   });
 
-  // ---- Fetch user ----
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await apiClient.get<UserInfo<[]>[]>("/api/auth/me");
-        if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserProfile);
-      } catch (err) {
-        console.error("Failed to fetch user:", err);
+    const loadAll = async () => {
+      const [userData, statusData, deptData, typeData] = await Promise.all([
+        fetchUser(),
+        fetchStatuses(),
+        fetchDepartments(),
+        fetchRequestTypes(),
+      ]);
+
+      setUser(userData);
+      setStatuses(statusData as ServiceRequestStatus[]);
+      setDepartments(deptData);
+      setRequestTypes(typeData);
+
+      if (userData) {
+        await fetchRequests(userData);
+      } else {
+        setLoading(false);
       }
     };
-    fetchUser();
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---- Fetch statuses ----
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
-        if (res.success) setStatuses(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch statuses:", err);
-      }
-    };
-    fetchStatuses();
-  }, []);
-
-  // ---- Fetch departments + request types ----
-  useEffect(() => {
-    const fetchFormData = async () => {
-      try {
-        const [deptRes, typeRes] = await Promise.all([
-          apiClient.get<Department[]>("/api/admin/department"),
-          apiClient.get<RequestType[]>("/api/admin/service-request-type"),
-        ]);
-        if (deptRes.success) setDepartments(deptRes.data || []);
-        if (typeRes.success) setRequestTypes(typeRes.data || []);
-      } catch (err) {
-        console.error("Failed to fetch form data:", err);
-      }
-    };
-    fetchFormData();
-  }, []);
-
-  // ---- Fetch user's requests ----
-  const fetchRequests = async () => {
-    if (!user) return;
+  // ---- Fetch all initial data ----
+  const fetchRequests = async (currentUser: UserProfile) => {
     setLoading(true);
     try {
       const res = await apiClient.get<ServiceRequest[][]>("/api/portal/requests");
@@ -170,14 +110,8 @@ export default function PortalDashboard() {
       setRequests([]);
     } finally {
       setLoading(false);
-    } 
+    }
   };
-
-  useEffect(() => {
-    if (user) fetchRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
   // ---- Create new request ----
   const handleCreateRequest = async () => {
     if (!formData.typeId || !formData.subject || !user) return;
@@ -188,13 +122,12 @@ export default function PortalDashboard() {
         RequestorID: user.UserID,
         Title: formData.subject,
         Description: formData.description,
-        Priority: formData.priority,
         ServiceDepartmentID: formData.deptId,
       });
       if (res.success) {
         setIsModalOpen(false);
-        setFormData({ deptId: "", typeId: "", subject: "", description: "", priority: "1" });
-        await fetchRequests();
+        setFormData({ deptId: "", typeId: "", subject: "", description: ""});
+        await fetchRequests(user);
       }
     } catch (err) {
       console.error("Failed to create request:", err);
@@ -337,22 +270,6 @@ export default function PortalDashboard() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={(value) => setFormData({ ...formData, priority: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Low">Low</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="flex gap-3">
                 <Button onClick={handleCreateRequest} className="flex-1 gap-2" disabled={submitting}>
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -371,21 +288,19 @@ export default function PortalDashboard() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map((stat, i) => (
           <Card key={i}
-            className={`transition-all duration-300 hover:shadow-md ${
-              stat.variant === "warning" ? "border-amber-200 bg-amber-50/50"
+            className={`transition-all duration-300 hover:shadow-md ${stat.variant === "warning" ? "border-amber-200 bg-amber-50/50"
               : stat.variant === "info" ? "border-blue-200 bg-blue-50/50"
-              : stat.variant === "success" ? "border-emerald-200 bg-emerald-50/50"
-              : ""
-            }`}
+                : stat.variant === "success" ? "border-emerald-200 bg-emerald-50/50"
+                  : ""
+              }`}
           >
             <CardContent className="p-6">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{stat.label}</p>
-              <p className={`mt-1 text-3xl font-bold ${
-                stat.variant === "warning" ? "text-amber-600"
+              <p className={`mt-1 text-3xl font-bold ${stat.variant === "warning" ? "text-amber-600"
                 : stat.variant === "info" ? "text-blue-600"
-                : stat.variant === "success" ? "text-emerald-600"
-                : ""
-              }`}>
+                  : stat.variant === "success" ? "text-emerald-600"
+                    : ""
+                }`}>
                 {loading ? "—" : stat.count}
               </p>
             </CardContent>
@@ -408,7 +323,7 @@ export default function PortalDashboard() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              
+
               <Select value={deptFilter} onValueChange={setDeptFilter}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="All Departments" />
@@ -429,7 +344,7 @@ export default function PortalDashboard() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Statuses</SelectItem>
-                  {statuses.map((s) => (
+                  {statuses && statuses.map((s) => (
                     <SelectItem key={String(s.ServiceRequestStatusID)} value={String(s.ServiceRequestStatusID)}>
                       {s.ServiceRequestStatusName}
                     </SelectItem>

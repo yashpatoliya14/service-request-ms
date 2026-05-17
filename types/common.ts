@@ -29,11 +29,13 @@ export interface ServiceRequest {
   } | null;
   ServiceRequestType?: {
     RequestTypeName: string;
+    ServiceDepartment?: { DeptName: string };
   } | null;
   ServiceRequestStatus?: {
     ServiceRequestStatusName: string;
-    IsTerminal: boolean;
-    ServiceRequestStatusCssClass?: string;
+    ServiceRequestStatusCssClass: string;
+    IsTerminal?: boolean | null;
+    IsDefault?: boolean | null;
   } | null;
 }
 

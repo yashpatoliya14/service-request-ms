@@ -67,11 +67,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
                 { status: 404 }
             );
         }
-
+        const statuses = await prisma.serviceRequestStatus.findMany({
+            where: {
+                OR: [
+                    { IsAssigned: true },
+                    { IsAllowedForTechnician: true }
+                ],
+            },
+        });
         // Get all requests assigned to this technician
         const requests = await prisma.serviceRequest.findMany({
             where: {
                 AssignedToID: BigInt(deptPerson.DeptPersonID),
+                StatusID: {
+                    in: statuses.map((status) => status.ServiceRequestStatusID),
+                }
             },
         });
 

@@ -152,12 +152,25 @@ export default function HODDashboard() {
         setRequests((prev) =>
           prev.map((req) =>
             String(req.ServiceRequestID) === String(selectedRequest.ServiceRequestID)
-              ? { ...req, AssignedToID: deptPersonId, StatusID: assignedStatusId }
+              ? {
+                  ...req,
+                  AssignedToID: deptPersonId,
+                  StatusID: assignedStatusId,
+                  ServiceRequestStatus: assignedStatus
+                    ? {
+                        ServiceRequestStatusName: assignedStatus.ServiceRequestStatusName,
+                        ServiceRequestStatusCssClass: assignedStatus.ServiceRequestStatusCssClass,
+                        IsTerminal: assignedStatus.IsTerminal ?? null,
+                        IsDefault: assignedStatus.IsDefault ?? null,
+                        IsAssigned: assignedStatus.IsAssigned ?? null,
+                      }
+                    : req.ServiceRequestStatus,
+                }
               : req
           )
         );
 
-        
+        toast.success("Technician assigned successfully!");
         setIsAssignModalOpen(false);
         setSelectedRequest(null);
       }
@@ -584,11 +597,12 @@ export default function HODDashboard() {
             </div>
             <div className="flex justify-end gap-2">
               <Button 
-                disabled={!closedStatus}
+                disabled={!closedStatus || !!evaluating}
                 onClick={() => handleEvaluate(String(selectedRequest?.ServiceRequestID))}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
               >
-                Submit Evaluation
+                {evaluating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                {evaluating ? "Evaluating..." : "Submit Evaluation"}
               </Button>
             </div>
           </div>
