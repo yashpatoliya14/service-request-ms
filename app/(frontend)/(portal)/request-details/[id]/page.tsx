@@ -52,9 +52,9 @@ interface Reply {
 }
 
 interface UserInfo {
-  userId: string;
-  fullName: string;
-  role: string;
+  UserID: string;
+  FullName: string;
+  Role: string;
 }
 
 interface PageProps {
@@ -143,7 +143,7 @@ export default function RequestDetails({ params }: PageProps) {
         console.error("Failed to fetch mappings:", err);
       }
     };
-    if (user?.role?.toLowerCase() === "hod") {
+    if (user?.Role?.toLowerCase() === "hod") {
       fetchMappings();
     }
   }, [user]);
@@ -216,7 +216,7 @@ export default function RequestDetails({ params }: PageProps) {
 
     socket.emit("send_message", {
       message,
-      ReplyByID: user?.userId,
+      ReplyByID: user?.UserID,
       Status: 1,
       ServiceRequestID: ServiceRequestID,
     });
@@ -306,7 +306,7 @@ export default function RequestDetails({ params }: PageProps) {
 
             {/* Replies */}
             {messages.map((reply) => {
-              const isOwn = reply.RepliedByID === user?.userId;
+              const isOwn = reply.RepliedByID === user?.UserID;
               const senderName = reply.Users?.FullName || "User";
               const initials = senderName.split(" ").map((n: string) => n[0]).join("").substring(0, 2);
 
@@ -434,7 +434,7 @@ export default function RequestDetails({ params }: PageProps) {
               <div className="flex flex-col space-y-3">
                 <span className="text-xs font-bold text-muted-foreground uppercase">Assigned To</span>
                 
-                {user?.role?.toLowerCase() === "hod" ? (
+                {user?.Role?.toLowerCase() === "hod" ? (
                   <Select
                     disabled={assigning || request.ServiceRequestStatus?.IsTerminal === true}
                     value={request.AssignedToID ? String(request.AssignedToID) : ""}
