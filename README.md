@@ -3,7 +3,7 @@
 
 ## Live Link 
 
-Check out the live demo [here]([https://system-request-ms.vercel.app/]).
+Check out the live demo [here](https://system-request-ms.vercel.app/).
 
 ## 📌 Application Overview
 
