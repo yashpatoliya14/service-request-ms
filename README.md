@@ -21,11 +21,15 @@ Service Request Management System is a robust issue tracking and service request
 - **Socket.io**: Real-time communication for live chat between users and technicians on specific requests.
 - **Prisma & PostgreSQL**: Reliable database ORM with type-safe queries and relational data management.
 - **Tailwind CSS & Framer Motion**: Clean, adaptive user interface with smooth animations and transitions.
-- **Role-Based Workspaces**: Dedicated portals and tools for different user roles (Admin, Technicians, Requesters).
+- **Role-Based Workspaces**: Dedicated portals and tools for different user roles (Admin, HOD, Technicians, Requesters).
 - **Authentication**: Secure JWT-based authentication with bcrypt password hashing.
 - **Real-Time Request Tracking**: Users can track the status and priority of their service requests dynamically.
 - **Technician Dashboard**: Specialized view for technicians to manage, update, and resolve their assigned tasks.
+- **Profile Upload Feature**: Cloudinary-based image upload for user profile photos with secure storage and easy management.
 - **Nodemailer**: Email functionality for notifications and OTP-based verification/password resets.
+- **Request Management**: Create, assign, track, and resolve service requests with detailed history and status updates.
+- **Department Management**: Admin can manage departments and assign technicians to specific departments.
+- **Service Type Mapping**: Configure service types and map them to appropriate technician roles.
 
 ### 🎯 Target Audience:
 
@@ -35,8 +39,9 @@ Organizations, IT departments, and service teams that require a centralized syst
 
 ## 🛠️ Panels & Roles
 
-* **Admin**: Manage all user roles, assign technicians to departments, update master status lists, and oversee all system requests.
-* **Technician**: View assigned tasks, update request statuses (e.g., In Progress, Completed), and communicate directly with the requester in real-time.
+* **Admin**: Manage all user roles, assign technicians to departments, update master status lists, and oversee all system requests. Full system control including service types, request types, and department management.
+* **HOD (Head of Department)**: Evaluate and approve service requests assigned to their department, manage technician workload, and provide oversight on request resolution.
+* **Technician**: View assigned tasks, update request statuses (e.g., In Progress, Completed), and communicate directly with the requester in real-time via live chat. Track work history and performance metrics.
 * **Requester (User)**: Submit new service requests, attach details and priority levels, track progress, and chat with assigned technicians for updates.
 
 ---
@@ -49,10 +54,16 @@ Organizations, IT departments, and service teams that require a centralized syst
 
 ### 👤 Key Features
 
-- 🔒 **Secure login and access control**
-- 📝 **Detailed Request creation and management**
-- 🛂 **Live Status tracking and History Logs**
-- 📱 **Fully responsive design for mobile and desktop**
+- 🔒 **Secure login and access control** with JWT authentication
+- 📝 **Detailed Request creation and management** with priority levels and service types
+- 👤 **User Profile Management** with Cloudinary image uploads
+- 🛂 **Live Status tracking and History Logs** for all requests
+- 💬 **Real-Time Live Chat** between requesters and technicians via WebSockets
+- 📱 **Fully responsive design** for mobile and desktop
+- 🏢 **Department & Role Management** with granular permissions
+- 📧 **Email Notifications** via Nodemailer for OTP and password resets
+- 📊 **Request Analytics** and performance tracking
+- 🔄 **Request Assignment Workflow** with HOD approval process
 
 ---
 
@@ -87,6 +98,8 @@ Organizations, IT departments, and service teams that require a centralized syst
 | tailwindcss   | ^4.0.0  |
 | prisma        | ^5.22.0 |
 | socket.io     | ^4.8.3  |
+| cloudinary    | ^2.9.0  |
+| nodemailer    | ^8.0.1  |
 
 ---
 
@@ -109,7 +122,7 @@ Organizations, IT departments, and service teams that require a centralized syst
 
 ---
 
-## 📂 Setup Instructions
+## � Setup Instructions
 
 ### Prerequisites:
 
@@ -135,8 +148,22 @@ Organizations, IT departments, and service teams that require a centralized syst
    Create a `.env` file in the root directory and add the required environment variables:
    
    ```env
+   # Database
    NEXT_DATABASE_URL="postgresql://username:password@localhost:5432/mydb"
+   
+   # Authentication
    JWT_SECRET="your_secure_secret_string"
+   
+   # Email Configuration
+   EMAIL_OF_DEVELOPER="your_email@gmail.com"
+   
+   # Socket.io Server
+   NEXT_PUBLIC_SOCKET_URL="your_socket_server_url"
+   
+   # Cloudinary (for profile uploads)
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your_cloud_name"
+   NEXT_PUBLIC_CLOUDINARY_API_KEY="your_api_key"
+   CLOUDINARY_API_SECRET="your_api_secret"
    ```
 
 4. **Initialize Database:**
