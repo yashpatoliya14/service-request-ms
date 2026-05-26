@@ -1,20 +1,21 @@
+import { asyncHandler } from "@/lib/asyncHandler";
 import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 // Get All Requests  
-export async function GET(req: NextRequest) {
-    try {
-        const user = getDetailsFromToken(req);
-        if (!user) {
-            return NextResponse.json({ success: false, message: "User not found", data: [] }, { status: 404 });
-        }
+export const GET = asyncHandler(async (req: NextRequest, context: any) => {
 
-        const requests = await prisma.serviceRequest.findMany({
-            where: {
-                RequestorID: BigInt(user.userId),
-                OR: [
-                    {
+    const user = getDetailsFromToken(req);
+    if (!user) {
+        return NextResponse.json({ success: false, message: "User not found", data: [] }, { status: 404 });
+    }
+
+    const requests = await prisma.serviceRequest.findMany({
+        where: {
+            RequestorID: BigInt(user.userId),
+            OR: [
+                {
                         ServiceRequestStatus: {
                             IsDefault: true
                         }
@@ -42,8 +43,4 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: false, message: "Get All Requests Failed", data: [] }, { status: 400 });
         }
 
-    } catch (error) {
-        console.log(error);
-        return NextResponse.json({ success: false, message: "Internal server error", data: [] }, { status: 500 });
-    }
-}
+    } )

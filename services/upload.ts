@@ -6,7 +6,6 @@ export const uploadProfilePhoto = async (file: File,publicId?:string) => {
     try{
 
       const res = await apiClient.delete("/api/auth/me/"+publicId)
-      console.log(res);
     }catch(e){
       console.error(e);
     }

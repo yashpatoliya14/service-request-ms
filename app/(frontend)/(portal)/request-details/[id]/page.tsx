@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useEffect, useState, useRef } from "react";
+import React, { use, useEffect, useState, useRef, useMemo } from "react";
 import { ArrowLeft, MessageCircle, Send, Clock, Loader2, User, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +82,13 @@ export default function RequestDetails({ params }: PageProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Role-aware back navigation: technicians go to /technician, others to /request-details
+  const backHref = useMemo(() => {
+    const role = user?.Role?.toLowerCase();
+    if (role === "technician") return "/technician";
+    return "/request-details";
+  }, [user]);
+
   // ---- Fetch user info ----
   useEffect(() => {
     const fetchUser = async () => {
@@ -147,27 +154,6 @@ export default function RequestDetails({ params }: PageProps) {
       fetchMappings();
     }
   }, [user]);
-
-  // ---- Handle Assign/Re-assign (HOD only) ----
-  const handleAssign = async (assignToId: string) => {
-    if (!request) return;
-    setAssigning(true);
-    try {
-      const res = await apiClient.patch(`/api/hod/${request.ServiceRequestID}`, {
-        AssignedToID: assignToId
-      });
-      if (res.success) {
-        await fetchRequest();
-      } else {
-        alert("Failed to assign request: " + (res.message || "Unknown error"));
-      }
-    } catch (err) {
-      console.error("Assignment error:", err);
-      alert("An error occurred while assigning.");
-    } finally {
-      setAssigning(false);
-    }
-  };
 
   //fetch previous messages
   useEffect(() => {
@@ -255,7 +241,7 @@ export default function RequestDetails({ params }: PageProps) {
       <div className="flex flex-col items-center justify-center py-32 text-muted-foreground">
         <p className="text-lg font-medium">Request not found</p>
         <Button asChild variant="link" className="mt-2">
-          <Link href="/request-details">Go back</Link>
+          <Link href={backHref}>Go back</Link>
         </Button>
       </div>
     );
@@ -266,7 +252,7 @@ export default function RequestDetails({ params }: PageProps) {
       {/* Top Bar */}
       <div className="flex items-center gap-4">
         <Link
-          href="/request-details"
+          href={backHref}
           className="p-3 bg-card rounded-2xl border text-muted-foreground hover:text-primary transition-all"
         >
           <ArrowLeft size={20} />
@@ -429,42 +415,6 @@ export default function RequestDetails({ params }: PageProps) {
               </span>
             </div>
 
-            {/* Assignment Block */}
-            <div className="pt-4 mt-4 border-t border-border/50">
-              <div className="flex flex-col space-y-3">
-                <span className="text-xs font-bold text-muted-foreground uppercase">Assigned To</span>
-                
-                {user?.Role?.toLowerCase() === "hod" ? (
-                  <Select
-                    disabled={assigning || request.ServiceRequestStatus?.IsTerminal === true}
-                    value={request.AssignedToID ? String(request.AssignedToID) : ""}
-                    onValueChange={handleAssign}
-                  >
-                    <SelectTrigger className="w-full text-sm font-semibold h-10 bg-muted/40 border-primary/20 hover:bg-muted/60 transition-colors">
-                      <SelectValue placeholder="Assign technician..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mappings
-                        .filter(m => String(m.ServiceRequestTypeID) === String(request.ServiceRequestTypeID))
-                        .map((m) => (
-                          <SelectItem key={String(m.ServicePersonID)} value={String(m.ServicePersonID)}>
-                            {m.ServiceDeptPerson?.Users?.FullName || `Technician #${m.ServicePersonID}`}
-                          </SelectItem>
-                        ))}
-                      {mappings.filter(m => String(m.ServiceRequestTypeID) === String(request.ServiceRequestTypeID)).length === 0 && (
-                        <SelectItem value="none" disabled>
-                          No technicians mapped for this type
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <span className="text-sm font-semibold bg-muted px-3 py-2 rounded-lg border border-border/50">
-                    {request.ServiceDeptPerson?.Users?.FullName || (request.AssignedToID ? "Loading..." : "Unassigned")}
-                  </span>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </div>

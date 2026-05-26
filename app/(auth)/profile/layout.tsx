@@ -9,7 +9,7 @@ import { getCookie } from "@/lib/cookie";
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
-  const [sidebarVariant, setSidebarVariant] = useState<"admin" | "portal" | "hod">("portal");
+  const [sidebarVariant, setSidebarVariant] = useState<"admin" | "portal" | "hod" | "technician">("portal");
 
   useEffect(() => {
     const role = getCookie("user_role")?.toLowerCase();
@@ -26,7 +26,9 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
       setSidebarVariant("admin");
     } else if (role === "hod") {
       setSidebarVariant("hod");
-    } else {
+    } else if(role==="technician"){
+      setSidebarVariant("technician");
+    } else{
       setSidebarVariant("portal");
     }
   }, [router]);

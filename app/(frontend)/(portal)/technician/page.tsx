@@ -322,17 +322,7 @@ export default function TechnicianDashboard() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                                {(task.Users?.FullName || "U")
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>Requested by {task.Users?.FullName || "User"}</span>
-                          </div>
+                          
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
                             <span>Assigned on {new Date(task.Created).toLocaleDateString()}</span>

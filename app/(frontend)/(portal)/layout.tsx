@@ -9,13 +9,14 @@ import { getCookie } from "@/lib/cookie";
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
+  const [sidebarVariant, setSidebarVariant] = useState<"portal" | "technician">("portal");
 
   useEffect(() => {
     const role = getCookie("user_role")?.toLowerCase();
     if (role === "user" || role === "technician") {
       setAuthorized(true);
-      // Technicians should land on their workspace, not the portal dashboard
       if (role === "technician") {
+        setSidebarVariant("technician");
         router.replace("/technician");
       }
     } else {
@@ -33,7 +34,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="flex min-h-screen bg-background">
-      <AppSidebar variant="portal" />
+      <AppSidebar variant={sidebarVariant} />
       <main className="ml-64 flex-1">
         <div className="container max-w-7xl p-6 lg:p-8">
           {children}

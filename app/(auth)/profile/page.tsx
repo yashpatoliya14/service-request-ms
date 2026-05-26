@@ -105,6 +105,7 @@ export default function ProfilePage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    
     if (file) {
       setSelectedFile(file)
     }
