@@ -71,6 +71,13 @@ export default function PortalDashboard() {
     description: "",
   });
 
+  const [formErrors, setFormErrors] = useState<{
+    deptId?: string;
+    typeId?: string;
+    subject?: string;
+    description?: string;
+  }>({});
+
   useEffect(() => {
     const loadAll = async () => {
       const [userData, statusData, deptData, typeData] = await Promise.all([
@@ -112,21 +119,35 @@ export default function PortalDashboard() {
       setLoading(false);
     }
   };
+  // ---- Validate form ----
+  const validateForm = () => {
+    const errors: { deptId?: string; typeId?: string; subject?: string; description?: string } = {};
+    if (!formData.deptId) errors.deptId = "Please select a department";
+    if (!formData.typeId) errors.typeId = "Please select a request type";
+    if (!formData.subject.trim()) errors.subject = "Subject is required";
+    else if (formData.subject.trim().length < 5) errors.subject = "Subject must be at least 5 characters";
+    if (!formData.description.trim()) errors.description = "Description is required";
+    else if (formData.description.trim().length < 5) errors.description = "Description must be at least 5 characters";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // ---- Create new request ----
   const handleCreateRequest = async () => {
-    if (!formData.typeId || !formData.subject || !user) return;
+    if (!validateForm() || !user) return;
     setSubmitting(true);
     try {
       const res = await apiClient.post("/api/portal/requestor", {
         ServiceRequestTypeID: formData.typeId,
         RequestorID: user.UserID,
-        Title: formData.subject,
+        Title: formData.subject.trim(),
         Description: formData.description,
         ServiceDepartmentID: formData.deptId,
       });
       if (res.success) {
         setIsModalOpen(false);
         setFormData({ deptId: "", typeId: "", subject: "", description: ""});
+        setFormErrors({});
         await fetchRequests(user);
       }
     } catch (err) {
@@ -199,7 +220,13 @@ export default function PortalDashboard() {
         </div>
 
         {/* Create Request Dialog */}
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <Dialog open={isModalOpen} onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) {
+            setFormErrors({});
+            setFormData({ deptId: "", typeId: "", subject: "", description: "" });
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2 shadow-lg shadow-primary/25">
               <Plus className="h-4 w-4" />
@@ -216,12 +243,15 @@ export default function PortalDashboard() {
             <div className="grid gap-6 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Service Department</Label>
+                  <Label>Service Department <span className="text-destructive">*</span></Label>
                   <Select
                     value={formData.deptId}
-                    onValueChange={(value) => setFormData({ ...formData, deptId: value, typeId: "" })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, deptId: value, typeId: "" });
+                      setFormErrors((prev) => ({ ...prev, deptId: undefined }));
+                    }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={formErrors.deptId ? "border-destructive ring-destructive/20 ring-2" : ""}>
                       <SelectValue placeholder="Choose Dept..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -232,15 +262,21 @@ export default function PortalDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {formErrors.deptId && (
+                    <p className="text-xs text-destructive font-medium">{formErrors.deptId}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Request Type</Label>
+                  <Label>Request Type <span className="text-destructive">*</span></Label>
                   <Select
                     value={formData.typeId}
-                    onValueChange={(value) => setFormData({ ...formData, typeId: value })}
+                    onValueChange={(value) => {
+                      setFormData({ ...formData, typeId: value });
+                      setFormErrors((prev) => ({ ...prev, typeId: undefined }));
+                    }}
                     disabled={!formData.deptId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={formErrors.typeId ? "border-destructive ring-destructive/20 ring-2" : ""}>
                       <SelectValue placeholder="Choose Type..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -251,22 +287,35 @@ export default function PortalDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {formErrors.typeId && (
+                    <p className="text-xs text-destructive font-medium">{formErrors.typeId}</p>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Brief Subject</Label>
+                <Label>Brief Subject <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="e.g. Printer not responding in Room 101"
                   value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  className={formErrors.subject ? "border-destructive ring-destructive/20 ring-2" : ""}
+                  onChange={(e) => {
+                    setFormData({ ...formData, subject: e.target.value });
+                    if (e.target.value.trim().length >= 5) {
+                      setFormErrors((prev) => ({ ...prev, subject: undefined }));
+                    }
+                  }}
                 />
+                {formErrors.subject && (
+                  <p className="text-xs text-destructive font-medium">{formErrors.subject}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label>Issue Description</Label>
+                <Label>Issue Description<span className="text-destructive">*</span></Label>
                 <Textarea
                   placeholder="Provide details about the problem..."
                   rows={4}
                   value={formData.description}
+                  className={formErrors.description ? "border-destructive ring-destructive/20 ring-2" : ""}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>

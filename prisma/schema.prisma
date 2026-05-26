@@ -26,7 +26,7 @@ model ServiceDeptPerson {
   UserID                       BigInt                         @unique
   IsActive                     Boolean?
   ModifiedAt                   DateTime?                      @db.Timestamp(6)
-  ServiceDepartment            ServiceDepartment?             @relation(fields: [ServiceDeptID], references: [ServiceDeptID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceDepartment            ServiceDepartment?             @relation(fields: [ServiceDeptID], references: [ServiceDeptID], onDelete: Cascade, onUpdate: NoAction)
   Users                        Users                          @relation(fields: [UserID], references: [UserID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequest               ServiceRequest[]
   ServiceRequestTypeWisePerson ServiceRequestTypeWisePerson[]
@@ -45,10 +45,10 @@ model ServiceRequest {
   Description          String?
   Priority             Priority?
   ServiceDepartmentID  BigInt?
-  ServiceDeptPerson    ServiceDeptPerson?    @relation(fields: [AssignedToID], references: [DeptPersonID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceDeptPerson    ServiceDeptPerson?    @relation(fields: [AssignedToID], references: [DeptPersonID], onDelete: SetNull, onUpdate: NoAction)
   Users                Users?                @relation(fields: [RequestorID], references: [UserID], onDelete: NoAction, onUpdate: NoAction, map: "ServiceRequest_RequesterID_fkey")
-  ServiceDepartment    ServiceDepartment?    @relation(fields: [ServiceDepartmentID], references: [ServiceDeptID], onDelete: NoAction, onUpdate: NoAction)
-  ServiceRequestType   ServiceRequestType?   @relation(fields: [ServiceRequestTypeID], references: [ServiceRequestTypeID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceDepartment    ServiceDepartment?    @relation(fields: [ServiceDepartmentID], references: [ServiceDeptID], onDelete: Cascade, onUpdate: NoAction)
+  ServiceRequestType   ServiceRequestType?   @relation(fields: [ServiceRequestTypeID], references: [ServiceRequestTypeID], onDelete: SetNull, onUpdate: NoAction)
   ServiceRequestStatus ServiceRequestStatus? @relation(fields: [StatusID], references: [ServiceRequestStatusID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequestReply  ServiceRequestReply[]
 }
@@ -62,7 +62,7 @@ model ServiceRequestReply {
   Message          String?
   StatusID         BigInt?
   Users            Users?         @relation(fields: [RepliedByID], references: [UserID], onDelete: NoAction, onUpdate: NoAction)
-  ServiceRequest   ServiceRequest @relation(fields: [ServiceRequestID], references: [ServiceRequestID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceRequest   ServiceRequest @relation(fields: [ServiceRequestID], references: [ServiceRequestID], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -91,7 +91,7 @@ model ServiceRequestType {
   IsActive                     Boolean?
   DefaultPriority              Priority?                      @default(LOW)
   ServiceRequest               ServiceRequest[]
-  ServiceDepartment            ServiceDepartment?             @relation(fields: [ServiceDeptID], references: [ServiceDeptID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceDepartment            ServiceDepartment?             @relation(fields: [ServiceDeptID], references: [ServiceDeptID], onDelete: Cascade, onUpdate: NoAction)
   ServiceType                  ServiceType?                   @relation(fields: [ServiceTypeID], references: [ServiceTypeID], onDelete: NoAction, onUpdate: NoAction)
   ServiceRequestTypeWisePerson ServiceRequestTypeWisePerson[]
 }
@@ -130,8 +130,8 @@ model ServiceRequestTypeWisePerson {
   ToDate                       DateTime?           @db.Date
   ServicePersonID              BigInt?
   ModifiedAt                   DateTime?           @default(now()) @db.Timestamp(6)
-  ServiceDeptPerson            ServiceDeptPerson?  @relation(fields: [ServicePersonID], references: [DeptPersonID], onDelete: NoAction, onUpdate: NoAction)
-  ServiceRequestType           ServiceRequestType? @relation(fields: [ServiceRequestTypeID], references: [ServiceRequestTypeID], onDelete: NoAction, onUpdate: NoAction)
+  ServiceDeptPerson            ServiceDeptPerson?  @relation(fields: [ServicePersonID], references: [DeptPersonID], onDelete: Cascade, onUpdate: NoAction)
+  ServiceRequestType           ServiceRequestType? @relation(fields: [ServiceRequestTypeID], references: [ServiceRequestTypeID], onDelete: Cascade, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
