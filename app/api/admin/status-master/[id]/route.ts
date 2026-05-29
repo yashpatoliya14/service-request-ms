@@ -1,12 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-// Types
-interface IStatusResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 // GET - Get status by ID
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
         if (status) {
             return NextResponse.json(
-                { success: true, message: "Get Status Successful", data: [status] } as IStatusResponse,
+                { success: true, message: "Get Status Successful", data: [status] } as ApiResponse,
                 { status: 200 }
             );
         } else {
@@ -64,7 +58,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         if (status) {
             return NextResponse.json(
-                { success: true, message: "Status Updated Successfully", data: [status] } as IStatusResponse,
+                { success: true, message: "Status Updated Successfully", data: [status] } as ApiResponse,
                 { status: 200 }
             );
         } else {
@@ -87,7 +81,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
         if (status) {
             return NextResponse.json(
-                { success: true, message: "Status Deleted Successfully", data: [status] } as IStatusResponse,
+                { success: true, message: "Status Deleted Successfully", data: [status] } as ApiResponse,
                 { status: 200 }
             );
         } else {

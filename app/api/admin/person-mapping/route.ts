@@ -1,18 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-
-interface IPersonMappingBody {
-    ServiceRequestTypeID: string;
-    ServiceDeptPerson: string;
-}
-
-interface IPersonMappingResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 
 // Create Person mapping  
@@ -45,7 +33,7 @@ export async function POST(req: NextRequest) {
             }
         })
         if (personMapping) {
-            return NextResponse.json({ success: true, message: "Person Mapping Created Successfull", data: [personMapping] } as IPersonMappingResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Person Mapping Created Successfull", data: [personMapping] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Person Mapping Creation Failed", data: [] }, { status: 400 });
         }
@@ -93,7 +81,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (personMapping) {
-            return NextResponse.json({ success: true, message: "Get All Person Mapping Successfull", data: personMapping ? personMapping : [] } as IPersonMappingResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get All Person Mapping Successfull", data: personMapping ? personMapping : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Person Mapping Failed", data: [] }, { status: 400 });
         }

@@ -1,45 +1,4 @@
-// Export all common types
+// Barrel export — re-exports all type modules
 export * from './common';
-
-// Re-export service-specific types (excluding conflicts)
-
-// Common utility types
-export interface PaginatedResponse<T = any> {
-  success: boolean;
-  message: string;
-  data: T[];
-  pagination?: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-export interface SelectOption {
-  value: string;
-  label: string;
-}
-
-export interface TableColumn<T = any> {
-  key: keyof T;
-  title: string;
-  render?: (value: any, item: T) => React.ReactNode;
-  sortable?: boolean;
-  filterable?: boolean;
-}
-
-export interface FilterConfig {
-  search?: string;
-  status?: string;
-  priority?: string;
-  dateRange?: {
-    start: Date;
-    end: Date;
-  };
-}
-
-export interface SortConfig {
-  key: string;
-  direction: 'asc' | 'desc';
-}
+export * from './api.types';
+export * from './client.types';

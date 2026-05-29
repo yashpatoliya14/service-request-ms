@@ -1,21 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-
-interface IServiceRequestTypeBody {
-    ServiceTypeID: string;
-    ServiceDept:string;
-    ServiceRequestTypeName:string;
-    DefaultPriority:string;
-    IsActive:boolean;    
-}
-
-interface IServiceRequestTypeResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 // Create Service Request Type  
 export async function POST(req: NextRequest) {
@@ -34,7 +19,7 @@ export async function POST(req: NextRequest) {
             }
         })
         if (serviceRequestType) {
-            return NextResponse.json({ success: true, message: "Service Request Type Created Successfull", data: [serviceRequestType] } as IServiceRequestTypeResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Service Request Type Created Successfull", data: [serviceRequestType] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Service Request Type Creation Failed", data: [] }, { status: 400 });
         }
@@ -57,7 +42,7 @@ export async function GET(req: NextRequest) {
             }
         })
         if (serviceRequestTypes) {
-            return NextResponse.json({ success: true, message: "Get All Service Request Types Successfull", data: serviceRequestTypes ? serviceRequestTypes : [] } as IServiceRequestTypeResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get All Service Request Types Successfull", data: serviceRequestTypes ? serviceRequestTypes : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Service Request Types Failed", data: [] }, { status: 400 });
         }

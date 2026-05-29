@@ -1,12 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-// Types
-interface IStatusResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 // POST - Create a new status
 export async function POST(req: NextRequest) {
@@ -45,7 +39,7 @@ export async function POST(req: NextRequest) {
 
         if (status) {
             return NextResponse.json(
-                { success: true, message: "Status Created Successfully", data: [status] } as IStatusResponse,
+                { success: true, message: "Status Created Successfully", data: [status] } as ApiResponse,
                 { status: 200 }
             );
         } else {
@@ -65,7 +59,7 @@ export async function GET() {
         });
 
         return NextResponse.json(
-            { success: true, message: "Get All Statuses Successful", data: statuses || [] } as IStatusResponse,
+            { success: true, message: "Get All Statuses Successful", data: statuses || [] } as ApiResponse,
             { status: 200 }
         );
     } catch (e) {

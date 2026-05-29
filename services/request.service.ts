@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-import { ServiceRequestStatus, Department, ServiceRequestType } from "@/types/common";
+import { ServiceRequestStatus, Department, ServiceRequestType } from "@/types";
 
 
 export const fetchStatuses = async (): Promise<ServiceRequestStatus[]> => {

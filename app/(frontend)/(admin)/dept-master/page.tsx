@@ -25,11 +25,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/apiClient";
+import { 
+  Department, 
+  useDepartments, 
+  useCreateDepartment, 
+  useDeleteDepartment, 
+  useUpdateDepartment 
+} from "@/features/admin/departments";
 
-interface Department {
-  ServiceDeptID: string;
-  DeptName: string;
-}
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-key";
+
+
 
 const colors = [
   "from-violet-500 to-purple-600",
@@ -41,8 +48,10 @@ const colors = [
 ];
 
 export default function DepartmentMaster() {
-  const [depts, setDepts] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: depts = [], isLoading: loading } = useDepartments();
+  const createMutation = useCreateDepartment();
+  const deleteMutation = useDeleteDepartment();
+  const updateMutation = useUpdateDepartment();
   const [error, setError] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,41 +71,16 @@ export default function DepartmentMaster() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteDept, setDeleteDept] = useState<Department | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  // Fetch all departments
-  const fetchDepartments = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const res = await apiClient.get<Department[]>("/api/admin/department");
-      if (res.success) {
-        setDepts(res.data ?? []);
-      }else{
-        setError(res.message);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load departments");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDepartments();
-  }, [fetchDepartments]);
+  const queryClient = useQueryClient();
 
   // Create department
   const handleCreate = async () => {
     if (!createName.trim()) return;
     try {
       setCreating(true);
-      const res = await apiClient.post("/api/admin/department", { DeptName: createName.trim() });
-      if (res.success) {
-        setCreateName("");
-        setCreateOpen(false);
-        fetchDepartments();
-      }
+      await createMutation.mutateAsync({ DeptName: createName.trim() });
+      setCreateName("");
+      setCreateOpen(false);
     } catch (err) {
       console.error(err);
       setError("Failed to create department");
@@ -110,15 +94,8 @@ export default function DepartmentMaster() {
     if (!editDept || !editName.trim()) return;
     try {
       setEditing(true);
-      const res = await apiClient.patch(`/api/admin/department/${editDept.ServiceDeptID}`, {
-        DeptName: editName.trim(),
-      });
-      if (res.success) {
-        setEditOpen(false);
-        setEditDept(null);
-        setEditName("");
-        fetchDepartments();
-      }
+      await updateMutation.mutateAsync({ ServiceDeptID: editDept.ServiceDeptID, DeptName: editName.trim() });
+      setEditOpen(false);
     } catch (err) {
       console.error(err);
       setError("Failed to update department");
@@ -132,11 +109,9 @@ export default function DepartmentMaster() {
     if (!deleteDept) return;
     try {
       setDeleting(true);
-      const res = await apiClient.delete(`/api/admin/department/${deleteDept.ServiceDeptID}`);
-      if (res.success) {
-        setDeleteOpen(false);
-        fetchDepartments();
-      }
+      await deleteMutation.mutateAsync(deleteDept.ServiceDeptID);
+      setDeleteOpen(false);
+
     } catch (err: any) {
       console.error(err);
       // Show the API error message (e.g. "Cannot delete — department is in use")
@@ -162,7 +137,7 @@ export default function DepartmentMaster() {
   };
 
   // Filtering
-  const filteredDepts = depts.filter((d) => 
+  const filteredDepts = depts.filter((d) =>
     !searchQuery || d.DeptName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -183,8 +158,8 @@ export default function DepartmentMaster() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Input 
-            placeholder="Search departments..." 
+          <Input
+            placeholder="Search departments..."
             className="w-full sm:w-64"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

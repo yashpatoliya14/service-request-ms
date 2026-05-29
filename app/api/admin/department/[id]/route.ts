@@ -1,12 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-interface IDepartmentResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 // get department by id 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             }
         })
         if (department) {
-            return NextResponse.json({ success: true, message: "Get Department Successfull", data: department ? [department] : [] } as IDepartmentResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get Department Successfull", data: department ? [department] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get Department Failed", data: [] }, { status: 400 });
         }
@@ -47,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             }
         })
         if (department) {
-            return NextResponse.json({ success: true, message: "Update Department Successfull", data: department ? [department] : [] } as IDepartmentResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Update Department Successfull", data: department ? [department] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Update Department Failed", data: [] }, { status: 400 });
         }
@@ -69,7 +63,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
             }
         })
         if (department) {
-            return NextResponse.json({ success: true, message: "Delete Department Successfull", data: department ? [department] : [] } as IDepartmentResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Delete Department Successfull", data: department ? [department] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Delete Department Failed", data: [] }, { status: 400 });
         }

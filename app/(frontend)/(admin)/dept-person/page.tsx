@@ -34,77 +34,55 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/apiClient";
-
-// Types
-// department interface
-interface Department {
-  ServiceDeptID: string;
-  DeptName: string;
-}
-
-// person master interface
-interface PersonMaster {
-  DeptPersonID: string;
-  ServiceDeptID: string | null;
-  UserID: string;
-  IsActive: boolean;
-  ServiceDepartment?: { DeptName: string } | null;
-  Users?: {
-    FullName: string | null;
-    Email: string | null;
-    Phone: string | null;
-    Role: string | null;
-  } | null;
-}
-
-// form for edit and create interface
-interface Form {
-  FullName: string;
-  Email: string;
-  Phone: string;
-  Password: string;
-  Role: string;
-  ServiceDeptID: string;
-}
-
+import { useDepartments } from "@/features/admin/departments";
+import { 
+  useGetAllDepartmentPersons, 
+  useCreateDepartmentPerson, 
+  useUpdateDepartmentPerson, 
+  useDeleteDepartmentPerson, 
+  DepartmentPerson,
+  type CreateDepartmentPersonInput
+} from "@/features/admin/department-persons";
 
 // intial states
-const emptyForm: Form = {
+const emptyForm: CreateDepartmentPersonInput = {
   FullName: "",
   Password: "",
   Email: "",
   Phone: "",
-  Role: "hod",
+  Role: "",
   ServiceDeptID: "",
 };
 
 
 
 export default function DeptPersonMapping() {
-  const [personnel, setPersonnel] = useState<PersonMaster[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data: personnel = [], isLoading: loading, error:fetchError } = useGetAllDepartmentPersons();
+  const { data: departments = [], isLoading: deptsLoading, error:deptFetchError } = useDepartments();
+  const createMutation = useCreateDepartmentPerson();
+  const updateMutation = useUpdateDepartmentPerson();
+  const deleteMutation = useDeleteDepartmentPerson();
   const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState("");
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<Form>(emptyForm);
+  const [createForm, setCreateForm] = useState<CreateDepartmentPersonInput>(emptyForm);
   const [creating, setCreating] = useState(false);
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
-  const [editItem, setEditItem] = useState<PersonMaster | null>(null);
-  const [editForm, setEditForm] = useState<Form>(emptyForm);
+  const [editItem, setEditItem] = useState<DepartmentPerson | null>(null);
+  const [editForm, setEditForm] = useState<CreateDepartmentPersonInput>(emptyForm);
   const [editing, setEditing] = useState(false);
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteItem, setDeleteItem] = useState<PersonMaster | null>(null);
+  const [deleteItem, setDeleteItem] = useState<DepartmentPerson | null>(null);
   const [deleting, setDeleting] = useState(false);
 
     // Shared form fields component
-    const renderFormFields = (form: Form, setForm: (f: Form) => void) => (
+    const renderFormFields = (form: CreateDepartmentPersonInput, setForm: (f: CreateDepartmentPersonInput) => void) => (
       <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -175,54 +153,19 @@ export default function DeptPersonMapping() {
     );
   
 
-  // Fetch data
-  const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const [persRes, deptsRes] = await Promise.all([
-        apiClient.get<PersonMaster[]>("/api/admin/person-master"),
-        apiClient.get<Department[]>("/api/admin/department"),
-      ]);
-      if (persRes.success) setPersonnel(persRes.data ?? []);
-      if (deptsRes.success) setDepartments(deptsRes.data ?? []);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
   // Create
   const handleCreate = async () => {
     if (!createForm.FullName.trim() || !createForm.Email.trim() || !createForm.Role || !createForm.ServiceDeptID) return;
     try {
       setCreating(true);
-      const res = await apiClient.post("/api/admin/person-master", {
-        FullName: createForm.FullName.trim(),
-        Email: createForm.Email.trim(),
-        Password:createForm.Password,
-        Phone: createForm.Phone.trim(),
-        Role: createForm.Role,
-        ServiceDeptID: createForm.ServiceDeptID,
-      });
-      if (res.success) {
-        setCreateForm(emptyForm);
-        setCreateOpen(false);
-        fetchAll();
-      }
+      await createMutation.mutateAsync(createForm);
+      setCreateForm(emptyForm);
+      setCreateOpen(false);
     } catch (err) {
       console.error(err);
       setError("Failed to add personnel");
     } finally {
       setCreating(false);
-      setCreateOpen(false);
-
     }
   };
 
@@ -231,21 +174,14 @@ export default function DeptPersonMapping() {
     if (!editItem || !editForm.ServiceDeptID || !editForm.Role) return;
     try {
       setEditing(true);
-      const res = await apiClient.patch(`/api/admin/person-master/${editItem.DeptPersonID}`, {
-        ServiceDeptID: editForm.ServiceDeptID,
-        Role: editForm.Role,
-      });
-      if (res.success) {
-        setEditOpen(false);
-        setEditItem(null);
-        fetchAll();
-      }
+      await updateMutation.mutateAsync({ ...editForm, DeptPersonID: editItem.DeptPersonID });
+      setEditForm(emptyForm);
+      setEditOpen(false);
     } catch (err) {
       console.error(err);
       setError("Failed to update personnel");
     } finally {
       setEditing(false);
-      setEditOpen(false);
     }
   };
 
@@ -254,21 +190,18 @@ export default function DeptPersonMapping() {
     if (!deleteItem) return;
     try {
       setDeleting(true);
-      const res = await apiClient.delete(`/api/admin/person-master/${deleteItem.DeptPersonID}`);
-      if (res.success) {
-        setDeleteOpen(false);
-        fetchAll();
-      }
-    } catch (err:any) {
+      await deleteMutation.mutateAsync(deleteItem.DeptPersonID);
+      setDeleteItem(null);
+      setDeleteOpen(false);
+    } catch (err) {
       console.error(err);
-      setError(err.message.toString());
+      setError("Failed to delete personnel");
     } finally {
       setDeleting(false);
-      setDeleteOpen(false);
     }
   };
 
-  const openDelete = (item: PersonMaster) => {
+  const openDelete = (item: DepartmentPerson) => {
     setDeleteItem(item);
     setDeleteOpen(true);
   };

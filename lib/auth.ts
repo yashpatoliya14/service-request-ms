@@ -1,13 +1,9 @@
 import jwt from "jsonwebtoken";
 import { NextRequest } from "next/server";
 import { JWT_TOKEN_EXPIRY } from "./constant";
+import { TokenPayload } from "@/types";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production";
-
-export interface TokenPayload {
-    userId: string;
-    role: string;
-}
 
 /**
  * Generates a JWT token for a user

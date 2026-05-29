@@ -44,7 +44,7 @@ import { getStatusBadge } from "@/lib/statusServices";
 import Link from "next/link";
 import { fetchUser } from "@/services/user.service";
 
-import { UserProfile, ServiceRequestType, ServiceRequest, ServiceRequestStatus, Department } from "@/types/common";
+import { UserProfile, ServiceRequestType, ServiceRequest, ServiceRequestStatus, Department } from "@/types";
 import { apiClient } from "@/lib/apiClient";
 import { fetchStatuses, fetchDepartments, fetchRequestTypes } from "@/services/request.service";
 

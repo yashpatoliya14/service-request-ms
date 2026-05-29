@@ -1,9 +1,7 @@
 // Simple API Client
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+import { ApiResponse } from "@/types";
+
+export type { ApiResponse };
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<ApiResponse<T>> {
   try {

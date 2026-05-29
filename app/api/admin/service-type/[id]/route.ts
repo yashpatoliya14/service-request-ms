@@ -1,13 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-//types
+import { ApiResponse } from "@/types";
 
-
-interface IServiceTypeResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
 // get service type by id 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 
@@ -20,7 +14,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             }
         })
         if (serviceType) {
-            return NextResponse.json({ success: true, message: "Get Service Type Successfull", data: serviceType ? [serviceType] : [] } as IServiceTypeResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get Service Type Successfull", data: serviceType ? [serviceType] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get Service Type Failed", data: [] }, { status: 400 });
         }
@@ -47,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             }
         })
         if (serviceType) {
-            return NextResponse.json({ success: true, message: "Update Service Type Successfull", data: serviceType ? [serviceType] : [] } as IServiceTypeResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Update Service Type Successfull", data: serviceType ? [serviceType] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Update Department Failed", data: [] }, { status: 400 });
         }
@@ -69,7 +63,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
             }
         })
         if (serviceType) {
-            return NextResponse.json({ success: true, message: "Delete Service Type Successfull", data: serviceType ? [serviceType] : [] } as IServiceTypeResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Delete Service Type Successfull", data: serviceType ? [serviceType] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Delete Service Type Failed", data: [] }, { status: 400 });
         }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -28,18 +28,10 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiClient } from "@/lib/apiClient";
 import { AvatarImage } from "@radix-ui/react-avatar";
+import { useUser } from "@/hooks/useUser";
 
 interface SidebarProps {
     variant: "admin" | "portal" | "technician" | "hod";
-}
-
-interface UserInfo {
-    UserID: string;
-    Email: string;
-    Role: string;
-    FullName: string;
-    Username: string;
-    ProfilePhoto?: string;
 }
 
 // Sidebar navigation configs per variant
@@ -98,20 +90,8 @@ export default function AppSidebar({ variant }: SidebarProps) {
     const router = useRouter();
     const config = sidebarConfigs[variant];
 
-    const [user, setUser] = useState<UserInfo | null>(null);
+    const { data: user } = useUser();
     const [loggingOut, setLoggingOut] = useState(false);
-
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const res = await apiClient.get<UserInfo[]>("/api/auth/me");
-                if (res.success && res.data?.[0]) setUser(res.data[0]);
-            } catch (err) {
-                console.error("Failed to fetch user info:", err);
-            }
-        };
-        fetchUser();
-    }, []);
 
     const handleLogout = async () => {
         try {

@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/apiClient";
 import { getStatusLabel, getStatusBadge } from "@/lib/statusServices";
-import { ServiceRequest, ServiceRequestStatus, Department } from "@/types/common";
+import { ServiceRequest, ServiceRequestStatus, Department } from "@/types";
 import { fetchStatuses, fetchDepartments } from "@/services/request.service";
 
 export default function UserRequestPortal() {

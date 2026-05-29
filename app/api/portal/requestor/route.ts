@@ -1,22 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-
-interface IRequestorBody {
-    ServiceRequestTypeID: string;
-    RequestorID: string;
-    Title: string;
-    Description: string;
-    Priority: string;
-
-}
-
-interface IRequestorResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 
 // Create Requestor  
@@ -99,7 +83,7 @@ export async function POST(req: NextRequest) {
                     assignedTo: assignedToID ? 'Yes' : 'No',
                     status: statusName
                 }
-            } as IRequestorResponse, { status: 200 });
+            } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Request Creation Failed", data: [] }, { status: 400 });
         }
@@ -117,7 +101,7 @@ export async function GET(req: NextRequest) {
         //get the requestors Data
         const requestors = await prisma.serviceRequest.findMany()
         if (requestors) {
-            return NextResponse.json({ success: true, message: "Get All Requestors Successfull", data: requestors ? requestors : [] } as IRequestorResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get All Requestors Successfull", data: requestors ? requestors : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Requestors Failed", data: [] }, { status: 400 });
         }

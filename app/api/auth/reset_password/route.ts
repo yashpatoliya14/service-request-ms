@@ -1,11 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-
-interface IResetPasswordBody {
-    Email: string;
-    Password: string;
-}
+import { IResetPasswordBody } from "@/types";
 
 export async function POST(req: NextRequest) {
     try {

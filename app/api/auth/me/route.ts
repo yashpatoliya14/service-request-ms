@@ -1,16 +1,7 @@
 import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { Interface } from "readline";
-
-interface UserProfile {
-    UserID: string;
-    Email: string;
-    Role: string;
-    FullName: string;
-    Username: string;
-    ProfilePhoto?: string;
-}
+import { UserProfile } from "@/types";
 
 
 // Get current user details from JWT token

@@ -1,22 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-
-interface IRequestorBody {
-    ServiceRequestTypeID: string;
-    RequestorID: string;
-    Title: string;
-    Description: string;
-    Priority: string;
-
-}
-
-interface IRequestorResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 
 // update a status
@@ -38,7 +22,7 @@ export async function PATCH(req: NextRequest) {
         console.log(requestor);
 
         if (requestor) {
-            return NextResponse.json({ success: true, message: "Requestor Created Successfull", data: [requestor] } as IRequestorResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Requestor Created Successfull", data: [requestor] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Requestor Creation Failed", data: [] }, { status: 400 });
         }
@@ -87,7 +71,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
         if (requests) {
             return NextResponse.json(
-                { success: true, message: "Get Technician Requests Successful", data: [requests] } as IRequestorResponse,
+                { success: true, message: "Get Technician Requests Successful", data: [requests] } as ApiResponse,
                 { status: 200 }
             );
         } else {
@@ -132,7 +116,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         if (updatedRequest) {
             return NextResponse.json(
-                { success: true, message: "Request Status Updated Successfully", data: [updatedRequest] } as IRequestorResponse,
+                { success: true, message: "Request Status Updated Successfully", data: [updatedRequest] } as ApiResponse,
                 { status: 200 }
             );
         } else {

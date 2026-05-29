@@ -1,26 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-//types
-
-interface IPersonMasterBody {
-    FullName: string;
-    Email: string;
-    Phone: number;
-    Department: string;
-    ProfilePhoto: string;
-    IsVerified: boolean;
-    Username: string;
-    Role: string;
-    Password: string;
-
-}
-
-interface IPersonMasterResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 
 // Create Person Master  
@@ -50,7 +31,7 @@ export async function POST(req: NextRequest) {
                 }
             })
             if(!user){
-                return NextResponse.json({ success: false, message: "User Creation Failed", data: [] } as IPersonMasterResponse, { status: 400 });
+                return NextResponse.json({ success: false, message: "User Creation Failed", data: [] } as ApiResponse, { status: 400 });
             }
         }
 
@@ -64,7 +45,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (personMaster) {
-            return NextResponse.json({ success: true, message: "Person Master Created Successfull", data: [personMaster] } as IPersonMasterResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Person Master Created Successfull", data: [personMaster] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Person Master Creation Failed", data: [] }, { status: 400 });
         }
@@ -99,7 +80,7 @@ export async function GET(req: NextRequest) {
         console.log(users);
         
         if (users) {
-            return NextResponse.json({ success: true, message: "Get All Person Masters Successfull", data: users ? users : [] } as IPersonMasterResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get All Person Masters Successfull", data: users ? users : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Person Master Failed", data: [] }, { status: 400 });
         }

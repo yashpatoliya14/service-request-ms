@@ -1,17 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-
-interface IServiceTypeBody {
-    ServiceTypeName: string;
-}
-
-interface IServiceTypeResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 // Create Service Type  
 export async function POST(req: NextRequest) {
@@ -27,7 +16,7 @@ export async function POST(req: NextRequest) {
             }
         })
         if (serviceType) {
-            return NextResponse.json({ success: true, message: "Service Type Created Successfull", data: [serviceType] } as IServiceTypeResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Service Type Created Successfull", data: [serviceType] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Service Type Creation Failed", data: [] }, { status: 400 });
         }
@@ -45,7 +34,7 @@ export async function GET(req: NextRequest) {
         //get the Service Types Data
         const serviceTypes = await prisma.serviceType.findMany()
         if (serviceTypes) {
-            return NextResponse.json({ success: true, message: "Get All Service Types Successfull", data: serviceTypes ? serviceTypes : [] } as IServiceTypeResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get All Service Types Successfull", data: serviceTypes ? serviceTypes : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Service Types Failed", data: [] }, { status: 400 });
         }

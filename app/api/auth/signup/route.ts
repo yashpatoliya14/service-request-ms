@@ -3,23 +3,7 @@ import { generateToken } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { sendOtpViaEmail } from "@/services/auth";
-
-interface ISignupBody {
-    FullName: string;
-    Email: string;
-    Phone: number;
-    ProfilePhoto: string;
-    IsVerified: boolean;
-    Password: string;
-    Username: string;
-    ProfileImageUrl: string;
-}
-
-interface ISignupResponse {
-    success: boolean;
-    message: string;
-    data: [{}];
-}
+import { ISignupBody } from "@/types";
 
 // User level signup only 
 export async function POST(req: NextRequest) {

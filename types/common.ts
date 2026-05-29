@@ -1,6 +1,24 @@
-// Common interfaces shared between backend and frontend
+// =============================================================================
+// Common Types — Shared domain models used by both backend and frontend
+// =============================================================================
 
-// User Profile - consistent across frontend and backend
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+/** Decoded JWT token payload — used by auth middleware and frontend auth checks */
+export interface TokenPayload {
+  userId: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+}
+
+// ---------------------------------------------------------------------------
+// User
+// ---------------------------------------------------------------------------
+
+/** User profile — consistent across frontend and backend */
 export interface UserProfile {
   UserID: string;
   Email: string;
@@ -10,7 +28,11 @@ export interface UserProfile {
   ProfilePhoto?: string;
 }
 
-// Service Request - consistent across frontend and backend
+// ---------------------------------------------------------------------------
+// Service Request
+// ---------------------------------------------------------------------------
+
+/** Full service request entity with nested relations */
 export interface ServiceRequest {
   ServiceRequestID: string;
   Title: string;
@@ -39,7 +61,10 @@ export interface ServiceRequest {
   } | null;
 }
 
+// ---------------------------------------------------------------------------
 // Service Request Status
+// ---------------------------------------------------------------------------
+
 export interface ServiceRequestStatus {
   ServiceRequestStatusID: number;
   ServiceRequestStatusName: string;
@@ -50,7 +75,10 @@ export interface ServiceRequestStatus {
   IsAssigned?: boolean | null;
 }
 
+// ---------------------------------------------------------------------------
 // Service Request Type
+// ---------------------------------------------------------------------------
+
 export interface ServiceRequestType {
   ServiceRequestTypeID: string;
   RequestTypeName: string;
@@ -59,14 +87,19 @@ export interface ServiceRequestType {
   IsActive: boolean | null;
 }
 
+// ---------------------------------------------------------------------------
 // Department
+// ---------------------------------------------------------------------------
+
 export interface Department {
   ServiceDeptID: string;
   DeptName: string;
-  IsActive: boolean | null;
 }
 
-// Department Person (for HOD/Technician assignments)
+// ---------------------------------------------------------------------------
+// Department Person (HOD / Technician assignments)
+// ---------------------------------------------------------------------------
+
 export interface DeptPerson {
   DeptPersonID: string;
   UserID: string;
@@ -81,7 +114,10 @@ export interface DeptPerson {
   } | null;
 }
 
-// Request Creation Data
+// ---------------------------------------------------------------------------
+// Request Creation DTO
+// ---------------------------------------------------------------------------
+
 export interface CreateRequestData {
   ServiceRequestTypeID: string;
   RequestorID: string;
@@ -91,18 +127,15 @@ export interface CreateRequestData {
   ServiceDepartmentID: string;
 }
 
-// API Response wrapper
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message: string;
-  data: T;
-}
+// ---------------------------------------------------------------------------
+// Enums / Union Types
+// ---------------------------------------------------------------------------
 
-// Priority levels
+/** Priority levels */
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
 
-// User roles
+/** User roles */
 export type UserRole = 'admin' | 'hod' | 'technician' | 'user';
 
-// Loading states
+/** Async loading states */
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';

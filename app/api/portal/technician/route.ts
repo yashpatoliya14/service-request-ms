@@ -1,14 +1,7 @@
 import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-
-interface ITechnicianResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 // GET - Get only service requests assigned to the logged-in technician
 export async function GET(req: NextRequest) {
@@ -64,13 +57,13 @@ export async function GET(req: NextRequest) {
         });
 
         return NextResponse.json(
-            { success: true, message: "Get Assigned Requests Successful", data: [requests] } as ITechnicianResponse,
+            { success: true, message: "Get Assigned Requests Successful", data: [requests] } as ApiResponse,
             { status: 200 }
         );
     } catch (e) {
         console.log(`Error in getting technician requests: ${e}`);
         return NextResponse.json(
-            { success: false, message: "Get Requests Failed", data: [] } as ITechnicianResponse,
+            { success: false, message: "Get Requests Failed", data: [] } as ApiResponse,
             { status: 500 }
         );
     }

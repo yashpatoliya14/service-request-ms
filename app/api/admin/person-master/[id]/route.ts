@@ -1,26 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { NextRequest, NextResponse } from "next/server";
-//types
+import { ApiResponse } from "@/types";
 
-interface IPersonMasterBody {
-    FullName: string;
-    Email: string;
-    Phone: number;
-    Department: string;
-    ProfilePhoto: string;
-    IsVerified: boolean;
-    Username: string;
-    Role: string;
-    Password: string;
-
-}
-
-interface IPersonMasterResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
 // get Person master by id 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 
@@ -37,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             }
         })
         if (user) {
-            return NextResponse.json({ success: true, message: "Get Person Master Successfull", data: user ? [user] : [] } as IPersonMasterResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get Person Master Successfull", data: user ? [user] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get Person Master Failed", data: [] }, { status: 400 });
         }
@@ -77,7 +59,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
                     UserID: BigInt(user.UserID),
                 }
             })
-                return NextResponse.json({ success: true, message: "Update Person Master Successfull", data: user ? [user] : [] } as IPersonMasterResponse, { status: 200 });
+                return NextResponse.json({ success: true, message: "Update Person Master Successfull", data: user ? [user] : [] } as ApiResponse, { status: 200 });
         }else{
                 return NextResponse.json({ success: false, message: "Update Person Master Failed", data: [] }, { status: 400 });
         }
@@ -111,7 +93,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
                 }
             })
             if(userRole){
-                return NextResponse.json({ success: true, message: "Delete Person Master Successfull", data: user ? [user] : [] } as IPersonMasterResponse, { status: 200 });
+                return NextResponse.json({ success: true, message: "Delete Person Master Successfull", data: user ? [user] : [] } as ApiResponse, { status: 200 });
             }else{
                 return NextResponse.json({ success: false, message: "Delete Person Master Failed", data: [] }, { status: 400 });
             }

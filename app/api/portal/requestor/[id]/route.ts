@@ -1,21 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { ApiResponse } from "@/types";
 
-
-//types
-interface IRequestorBody {
-    ServiceRequestTypeID: number;
-    RequestorID: number;
-    Title: string;
-    Description: string;
-    Priority: number;    
-}
-
-interface IRequestorResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
 // get requestor by id 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 
@@ -37,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             }
         })
         if (requestor) {
-            return NextResponse.json({ success: true, message: "Get Requestor Successfull", data: requestor ? [requestor] : [] } as IRequestorResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get Requestor Successfull", data: requestor ? [requestor] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get Requestor Failed", data: [] }, { status: 400 });
         }
@@ -68,7 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             }
         })
         if (requestor) {
-            return NextResponse.json({ success: true, message: "Update Requestor Successfull", data: requestor ? [requestor] : [] } as IRequestorResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Update Requestor Successfull", data: requestor ? [requestor] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Update Requestor Failed", data: [] }, { status: 400 });
         }
@@ -98,7 +84,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         })
         
         if (requestor) {
-            return NextResponse.json({ success: true, message: "Delete Requestor Successfull", data: requestor ? [requestor] : [] } as IRequestorResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Delete Requestor Successfull", data: requestor ? [requestor] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Delete Requestor Failed", data: [] }, { status: 400 });
         }

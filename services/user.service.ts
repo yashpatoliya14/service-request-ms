@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/apiClient";
-import { UserProfile } from "@/types/common";
+import { UserProfile } from "@/types";
 
 
 export const fetchUser = async (): Promise<UserProfile | null> => {

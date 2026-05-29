@@ -1,18 +1,7 @@
 import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-
-interface IPortalHistoryBody {
-    RequestorID: string;
-}
-
-interface IPortalHistoryResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
+import { ApiResponse } from "@/types";
 
 // Get All Requests  
 export async function GET(req: NextRequest) {
@@ -37,7 +26,7 @@ export async function GET(req: NextRequest) {
             }
         })
         if (requests) {
-            return NextResponse.json({ success: true, message: "Get All Requests History Successfull", data: [requests] } as IPortalHistoryResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get All Requests History Successfull", data: [requests] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Requests History Failed", data: [] }, { status: 400 });
         }

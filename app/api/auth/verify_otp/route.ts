@@ -1,13 +1,7 @@
 import { generateToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-
-interface IVerifyOtpBody {
-    Email: string;
-    Otp: string;
-    isForgotPassword?: boolean;
-}
+import { IVerifyOtpBody } from "@/types";
 
 export async function POST(req: NextRequest) {
     try {

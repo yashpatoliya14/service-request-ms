@@ -1,35 +1,7 @@
 import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-//types
-
-interface IHodBody {
-    ServiceRequestTypeID: string;
-    RequestNo: string;
-    RequestorID: string;
-    AssignedToID: string;
-    StatusID: string;
-    Title: string;
-    Description: string;
-    Priority: string; 
-}
-
-interface IHodResponse {
-    success: boolean;
-    message: string;
-    data: any[];
-}
-
-interface IUserDetail{
-    userId: string;
-    email: string;
-    role: string;
-    fullName: string;
-    username: string;
-    iat?: number;
-    exp?: number;
-}
+import { ApiResponse } from "@/types";
 
 
 // Create assignment  
@@ -71,7 +43,7 @@ export async function POST(req: NextRequest) {
             }
         })
         if (assignment) {
-            return NextResponse.json({ success: true, message: "Assignment Created Successfull", data: [assignment] } as IHodResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Assignment Created Successfull", data: [assignment] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Assignment Creation Failed", data: [] }, { status: 400 });
         }
@@ -120,7 +92,7 @@ export async function GET(req: NextRequest) {
             },
         });
         if (requests) {
-            return NextResponse.json({ success: true, message: "Get All Requests Successfull", data: [requests] } as IHodResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get All Requests Successfull", data: [requests] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Requests Failed", data: [] }, { status: 400 });
         }

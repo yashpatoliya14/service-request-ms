@@ -7,15 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { apiClient } from "@/lib/apiClient";
-import { getStatusLabel, getStatusClass, StatusInfo, getStatusBadge } from "@/lib/statusServices";
+import { StatusInfo, getStatusBadge } from "@/lib/statusServices";
 import { socket } from "@/lib/socket";
 // ---- Types ----
 interface ServiceRequest {
