@@ -31,8 +31,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiClient } from "@/lib/apiClient";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  usePersonMappings, 
+  useCreatePersonMapping, 
+  useUpdatePersonMapping, 
+  useDeletePersonMapping, 
+  useGetTechnician
+} from "@/features/admin/person-mappings";
+import { useRequestTypes } from "@/features/admin/request-types/hooks";
+import { DepartmentPerson, useGetAllDepartmentPersons } from "@/features/admin/department-persons";
 
 interface IPersonMapping {
   ServiceRequestTypeID: string;
@@ -76,91 +84,56 @@ export default function AutoAssignmentMaster() {
 
   
 
-  const [serviceRequestType,setServiceRequestType] = useState<IServiceRequestType[]>([]);
-  const [servicePerson,setServicePerson] = useState<IServicePerson[]>([]);
-  const [personMappingList,setPersonMappingList] = useState<IPersonMapping[]>([]);
+  const { data: personMappingList = [], isLoading: loadingMappings } = usePersonMappings() as any;
+  const { data: serviceRequestType = [], isLoading: loadingRequestTypes } = useRequestTypes() as any;
+  const { data: servicePerson = [], isLoading: loadingPersons } = useGetTechnician() as any ;
+
+  const createMappingMutation = useCreatePersonMapping();
+  const updateMappingMutation = useUpdatePersonMapping();
+  const deleteMappingMutation = useDeletePersonMapping();
+
+  const loadingInitial = loadingMappings || loadingRequestTypes || loadingPersons;
+
   const [serviceRequestTypeID,setServiceRequestTypeID] = useState<string>("");
   const [servicePersonID,setServicePersonID] = useState<string>("");
-  const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string>("");
-  const [isUpdating, setIsUpdating] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [loadingInitial, setLoadingInitial] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<IPersonMapping | null>(null);
   const [editServicePersonID, setEditServicePersonID] = useState<string>("");
 
-  const fetchMappingList = async () => {
-    const response = await apiClient.get<IPersonMapping[]>("/api/admin/person-mapping");
-    setPersonMappingList(response.data || []);
-  };
-
-  const fetchServiceRequestType = async () => {
-    const response = await apiClient.get<IServiceRequestType[]>("/api/admin/service-request-type");
-    setServiceRequestType(response.data || []);
-  };
-
-  const fetchServicePerson = async () => {
-    const response = await apiClient.get<IServicePerson[]>("/api/admin/person-master");
-    setServicePerson(response.data || []);
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoadingInitial(true);
-      await Promise.all([
-        fetchMappingList(),
-        fetchServiceRequestType(),
-        fetchServicePerson()
-      ]);
-      setLoadingInitial(false);
-    };
-    fetchData();
-  }, []);
+  const isCreating = createMappingMutation.isPending;
+  const isUpdating = updateMappingMutation.isPending ? updateMappingMutation.variables?.ServiceRequestTypeID || "" : null;
+  const isDeleting = deleteMappingMutation.isPending ? deleteMappingMutation.variables : null;
 
   const handleCreateMapping = async (serviceRequestTypeID:string,servicePersonID:string) => {
-    setIsCreating(true);
     setCreateError("");
     try {
-      const response = await apiClient.post("/api/admin/person-mapping", {
-        ServiceRequestTypeID:serviceRequestTypeID,
-        DeptPersonID:servicePersonID,
+      await createMappingMutation.mutateAsync({
+        ServiceRequestTypeID: serviceRequestTypeID,
+        DeptPersonID: servicePersonID,
       });
-      if(response.success){
-        fetchMappingList();
-        setIsModalOpen(false);
-        setServiceRequestTypeID("");
-        setServicePersonID("");
-        setCreateError("");
-      } else {
-        setCreateError(response.message || "Failed to create mapping. It may already exist.");
-      }
+      setIsModalOpen(false);
+      setServiceRequestTypeID("");
+      setServicePersonID("");
+      setCreateError("");
     } catch (e: any) {
-      console.log(e);
+      console.error(e);
       setCreateError(e.message || "An error occurred while creating mapping");
-    } finally {
-      setIsCreating(false);
     }
   };
 
   const handleUpdateMapping = async () => {
     if (!editItem) return;
-    setIsUpdating(editItem.ServiceRequestTypeID);
     try {
-      const response = await apiClient.put(`/api/admin/person-mapping/${editItem.ServiceRequestTypeID}`, {
+      await updateMappingMutation.mutateAsync({
         ServiceRequestTypeID: editItem.ServiceRequestTypeID,
         ServicePersonID: editServicePersonID,
       });
-      if(response.success){
-        fetchMappingList();
-        setIsEditModalOpen(false);
-      }
+      setIsEditModalOpen(false);
     } catch (e) {
-      console.log(e);
-    } finally {
-      setIsUpdating(null);
+      console.error(e);
     }
   };
 
@@ -171,20 +144,14 @@ export default function AutoAssignmentMaster() {
   };
 
   const handleDeleteMapping = async (id:string) => {
-    setIsDeleting(id);
     try {
-      const response = await apiClient.delete(`/api/admin/person-mapping/${id}`);
-      if(response.success){
-        fetchMappingList();
-      }
+      await deleteMappingMutation.mutateAsync(id);
     } catch (e) {
-      console.log(e);
-    } finally {
-      setIsDeleting(null);
+      console.error(e);
     }
   };
 
-  const filteredMappings = personMappingList.filter((item) => {
+  const filteredMappings = personMappingList.filter((item:any) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -237,7 +204,7 @@ export default function AutoAssignmentMaster() {
                     <SelectValue placeholder="Select Request Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {serviceRequestType.map((item) => (
+                    {serviceRequestType.map((item:any) => (
                       <SelectItem key={item.ServiceRequestTypeID} value={item.ServiceRequestTypeID.toString()}>
                         {item.RequestTypeName}
                       </SelectItem>
@@ -252,9 +219,9 @@ export default function AutoAssignmentMaster() {
                     <SelectValue placeholder="Select Technician" />
                   </SelectTrigger>
                   <SelectContent>
-                    {servicePerson.map((item) => (
+                    {servicePerson.map((item:DepartmentPerson) => (
                       <SelectItem key={item.DeptPersonID} value={item.DeptPersonID.toString()}>
-                        {item.Users.FullName} ({item.ServiceDepartment.DeptName})
+                        {item?.Users?.FullName ?? ""} ({item?.ServiceDepartment?.DeptName ?? ""})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -338,7 +305,7 @@ export default function AutoAssignmentMaster() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredMappings.map((item) => (
+                filteredMappings.map((item:any) => (
                   <TableRow key={item.ServiceRequestTypeID} className="group">
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -357,7 +324,7 @@ export default function AutoAssignmentMaster() {
                         <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-1.5">
                           <Avatar className="h-6 w-6">
                             <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {item.ServiceDeptPerson.Users.FullName.split(" ").map((n) => n[0]).join("")}
+                              {item.ServiceDeptPerson.Users.FullName.split(" ").map((n:any) => n[0]).join("")}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-sm font-medium">{item.ServiceDeptPerson.Users.FullName}</span>
@@ -421,7 +388,7 @@ export default function AutoAssignmentMaster() {
                   <SelectValue placeholder="Select Technician" />
                 </SelectTrigger>
                 <SelectContent>
-                  {servicePerson.map((item) => (
+                  {servicePerson.map((item:any) => (
                     <SelectItem key={item.DeptPersonID} value={item.DeptPersonID.toString()}>
                       {item.Users.FullName} ({item.ServiceDepartment.DeptName})
                     </SelectItem>

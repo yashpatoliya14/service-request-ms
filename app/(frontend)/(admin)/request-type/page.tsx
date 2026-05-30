@@ -35,6 +35,10 @@ import {
 import { apiClient } from "@/lib/apiClient";
 import { Switch } from "@/components/ui/switch";
 import { priorityLabels } from "@/lib/constant";
+import { useDepartments } from "@/features/admin/departments";
+import { useRequestTypes, useRequestTypesCreate, useRequestTypesDelete, useRequestTypesUpdate } from "@/features/admin/request-types/hooks";
+import { RequestTypeCreateSchema, RequestTypeUpdateSchema } from "@/features/admin/request-types/schemas";
+import { useServiceTypes } from "@/features/admin/service-types";
 
 // Types
 interface Department {
@@ -58,15 +62,17 @@ interface RequestType {
   ServiceType?: { ServiceTypeName: string };
 }
 
-interface FormData {
-  RequestTypeName: string;
-  ServiceTypeID: string;
-  ServiceDeptID: string;
-  DefaultPriority: string;
-  IsActive: boolean;
-}
 
-const emptyForm: FormData = {
+const emptyFormForCreate: RequestTypeCreateSchema = {
+  RequestTypeName: "",
+  ServiceTypeID: "",
+  ServiceDeptID: "",
+  DefaultPriority: "MEDIUM",
+  IsActive: true,
+};
+
+const emptyFormForUpdate: RequestTypeUpdateSchema = {
+  ServiceRequestTypeID: "",
   RequestTypeName: "",
   ServiceTypeID: "",
   ServiceDeptID: "",
@@ -77,21 +83,28 @@ const emptyForm: FormData = {
 
 
 export default function RequestTypeMaster() {
-  const [requestTypes, setRequestTypes] = useState<RequestType[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data: requestTypes = [], isPending: requestTypesloading, refetch: refetchRequestTypes } = useRequestTypes();
+  const { data: departments = [], isPending: departmentsLoading } = useDepartments();
+  const { data: serviceTypes = [], isPending: serviceTypesLoading } = useServiceTypes();
+  
+  const loading = requestTypesloading || departmentsLoading || serviceTypesLoading;
+
+  const createRequestTypes = useRequestTypesCreate();
+  const updateRequestTypes = useRequestTypesUpdate();
+  const deleteRequestTypes = useRequestTypesDelete();
+  const [error, setError] = useState("")
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<FormData>(emptyForm);
+  const [createForm, setCreateForm] = useState<RequestTypeCreateSchema>(emptyFormForCreate);
   const [creating, setCreating] = useState(false);
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<RequestType | null>(null);
-  const [editForm, setEditForm] = useState<FormData>(emptyForm);
+  const [editForm, setEditForm] = useState<RequestTypeUpdateSchema>(
+    emptyFormForUpdate
+  );
   const [editing, setEditing] = useState(false);
 
   // Delete dialog
@@ -99,48 +112,17 @@ export default function RequestTypeMaster() {
   const [deleteItem, setDeleteItem] = useState<RequestType | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Fetch data
-  const fetchAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const [reqTypesRes, deptsRes, svcTypesRes] = await Promise.all([
-        apiClient.get<RequestType[]>("/api/admin/service-request-type"),
-        apiClient.get<Department[]>("/api/admin/department"),
-        apiClient.get<ServiceType[]>("/api/admin/service-type"),
-      ]);
-      if (reqTypesRes.success) setRequestTypes(reqTypesRes.data ?? []);
-      if (deptsRes.success) setDepartments(deptsRes.data ?? []);
-      if (svcTypesRes.success) setServiceTypes(svcTypesRes.data ?? []);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
   // Create
   const handleCreate = async () => {
     if (!createForm.RequestTypeName.trim() || !createForm.ServiceDeptID || !createForm.ServiceTypeID) return;
     try {
       setCreating(true);
-      const res = await apiClient.post("/api/admin/service-request-type", {
-        ServiceRequestTypeName: createForm.RequestTypeName.trim(),
-        ServiceTypeID: createForm.ServiceTypeID,
-        ServiceDeptID: createForm.ServiceDeptID,
-        DefaultPriority: createForm.DefaultPriority,
-        IsActive: createForm.IsActive,
+      createRequestTypes.mutateAsync(createForm, {
+        onSuccess: () => {
+          setCreateOpen(false);
+          setCreateForm(emptyFormForCreate);
+        }
       });
-      if (res.success) {
-        setCreateForm(emptyForm);
-        setCreateOpen(false);
-        fetchAll();
-      }
     } catch (err) {
       console.error(err);
       setError("Failed to create request type");
@@ -154,18 +136,12 @@ export default function RequestTypeMaster() {
     if (!editItem || !editForm.RequestTypeName.trim() || !editForm.ServiceDeptID || !editForm.ServiceTypeID) return;
     try {
       setEditing(true);
-      const res = await apiClient.patch(`/api/admin/service-request-type/${editItem.ServiceRequestTypeID}`, {
-        RequestTypeName: editForm.RequestTypeName.trim(),
-        ServiceTypeID: editForm.ServiceTypeID,
-        ServiceDeptID: editForm.ServiceDeptID,
-        DefaultPriority: editForm.DefaultPriority,
-        IsActive: editForm.IsActive,
+      updateRequestTypes.mutateAsync(editForm, {
+        onSuccess: () => {
+          setEditOpen(false);
+          setEditForm(emptyFormForUpdate);
+        }
       });
-      if (res.success) {
-        setEditOpen(false);
-        setEditItem(null);
-        fetchAll();
-      }
     } catch (err) {
       console.error(err);
       setError("Failed to update request type");
@@ -179,11 +155,11 @@ export default function RequestTypeMaster() {
     if (!deleteItem) return;
     try {
       setDeleting(true);
-      const res = await apiClient.delete(`/api/admin/service-request-type/${deleteItem.ServiceRequestTypeID}`);
-      if (res.success) {
-        setDeleteOpen(false);
-        fetchAll();
-      }
+      await deleteRequestTypes.mutateAsync(deleteItem, {
+        onSuccess: () => {
+          setDeleteOpen(false);
+        }
+      });
     } catch (err) {
       console.error(err);
       setError("Failed to delete request type");
@@ -195,6 +171,7 @@ export default function RequestTypeMaster() {
   const openEdit = (item: RequestType) => {
     setEditItem(item);
     setEditForm({
+      ServiceRequestTypeID: item.ServiceRequestTypeID,
       RequestTypeName: item.RequestTypeName ?? "",
       ServiceTypeID: item.ServiceTypeID?.toString() ?? "",
       ServiceDeptID: item.ServiceDeptID?.toString() ?? "",
@@ -212,7 +189,10 @@ export default function RequestTypeMaster() {
 
 
   // Shared form fields component
-  const renderFormFields = (form: FormData, setForm: (f: FormData) => void) => (
+  const renderFormFields = <T extends RequestTypeCreateSchema | RequestTypeUpdateSchema>(
+    form: T,
+    setForm: (f: T) => void
+  ) => (
     <div className="grid gap-4 py-4">
       <div className="space-y-2">
         <Label>Request Type Name</Label>
@@ -230,7 +210,7 @@ export default function RequestTypeMaster() {
               <SelectValue placeholder="Select..." />
             </SelectTrigger>
             <SelectContent>
-              {departments.map((d) => (
+              {departments && departments.map((d) => (
                 <SelectItem key={d.ServiceDeptID} value={d.ServiceDeptID.toString()}>
                   {d.DeptName}
                 </SelectItem>
@@ -350,7 +330,7 @@ export default function RequestTypeMaster() {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total Request Types</p>
               <div className="text-2xl font-bold">
-                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : requestTypes.length}
+                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : requestTypes?.length ?? 0}
               </div>
             </div>
           </CardContent>
@@ -363,7 +343,7 @@ export default function RequestTypeMaster() {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Active Types</p>
               <div className="text-2xl font-bold">
-                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : requestTypes.filter((r) => r.IsActive).length}
+                {loading ? <Skeleton className="mt-1 h-7 w-12" /> : requestTypes?.filter((r) => r.IsActive).length ?? 0}
               </div>
             </div>
           </CardContent>
@@ -378,7 +358,7 @@ export default function RequestTypeMaster() {
       )}
 
       {/* Empty State */}
-      {!loading && requestTypes.length === 0 && (
+      {!loading && requestTypes?.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Settings2 className="mb-4 h-12 w-12 text-muted-foreground/50" />
@@ -395,7 +375,7 @@ export default function RequestTypeMaster() {
       )}
 
       {/* Table */}
-      {!loading && requestTypes.length > 0 && (
+      {!loading && (requestTypes?.length ?? 0) > 0 && (
         <Card>
           <CardHeader className="border-b">
             <div className="flex items-center gap-2">
@@ -417,7 +397,7 @@ export default function RequestTypeMaster() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requestTypes.map((item, index) => (
+                {requestTypes?.map((item, index) => (
                   <TableRow key={item.ServiceRequestTypeID} className="group">
                     <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                     <TableCell>

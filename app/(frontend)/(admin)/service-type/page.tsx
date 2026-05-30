@@ -23,74 +23,52 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiClient } from "@/lib/apiClient";
-
-interface ServiceType {
-  ServiceTypeID: string;
-  ServiceTypeName: string;
-}
+import { 
+  useServiceTypes, 
+  useCreateServiceType, 
+  useUpdateServiceType, 
+  useDeleteServiceType,
+  ServiceType 
+} from "@/features/admin/service-types";
 
 export default function ServiceTypeMaster() {
-  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: serviceTypes = [], isLoading: loading, error: queryError } = useServiceTypes();
+  const createServiceTypeMutation = useCreateServiceType();
+  const updateServiceTypeMutation = useUpdateServiceType();
+  const deleteServiceTypeMutation = useDeleteServiceType();
+
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
-  const [creating, setCreating] = useState(false);
 
   // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<ServiceType | null>(null);
   const [editName, setEditName] = useState("");
-  const [editing, setEditing] = useState(false);
 
   // Delete dialog state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<ServiceType | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
-  // Fetch all service types
-  const fetchServiceTypes = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const res = await apiClient.get<ServiceType[]>("/api/admin/service-type");
-      if (res.success) {
-        setServiceTypes(res.data ?? []);
-      } else {
-        setError(res.message);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load service types");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Sync react-query load errors to local state if any
   useEffect(() => {
-    fetchServiceTypes();
-  }, [fetchServiceTypes]);
+    if (queryError) {
+      setError(queryError instanceof Error ? queryError.message : "Failed to load service types");
+    }
+  }, [queryError]);
 
   // Create service type
   const handleCreate = async () => {
     if (!createName.trim()) return;
     try {
-      setCreating(true);
-      const res = await apiClient.post("/api/admin/service-type", { ServiceTypeName: createName.trim() });
-      if (res.success) {
-        setCreateName("");
-        setCreateOpen(false);
-        fetchServiceTypes();
-      }
+      await createServiceTypeMutation.mutateAsync({ ServiceTypeName: createName.trim() });
+      setCreateName("");
+      setCreateOpen(false);
     } catch (err) {
       console.error(err);
-      setError("Failed to create service type");
-    } finally {
-      setCreating(false);
     }
   };
 
@@ -98,21 +76,15 @@ export default function ServiceTypeMaster() {
   const handleUpdate = async () => {
     if (!editItem || !editName.trim()) return;
     try {
-      setEditing(true);
-      const res = await apiClient.patch(`/api/admin/service-type/${editItem.ServiceTypeID}`, {
+      await updateServiceTypeMutation.mutateAsync({
+        ServiceTypeID: editItem.ServiceTypeID,
         ServiceTypeName: editName.trim(),
       });
-      if (res.success) {
-        setEditOpen(false);
-        setEditItem(null);
-        setEditName("");
-        fetchServiceTypes();
-      }
+      setEditOpen(false);
+      setEditItem(null);
+      setEditName("");
     } catch (err) {
       console.error(err);
-      setError("Failed to update service type");
-    } finally {
-      setEditing(false);
     }
   };
 
@@ -120,17 +92,10 @@ export default function ServiceTypeMaster() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
-      setDeleting(true);
-      const res = await apiClient.delete(`/api/admin/service-type/${deleteItem.ServiceTypeID}`);
-      if (res.success) {
-        setDeleteOpen(false);
-        fetchServiceTypes();
-      }
+      await deleteServiceTypeMutation.mutateAsync(deleteItem.ServiceTypeID);
+      setDeleteOpen(false);
     } catch (err) {
       console.error(err);
-      setError("Failed to delete service type");
-    } finally {
-      setDeleting(false);
     }
   };
 
@@ -205,8 +170,8 @@ export default function ServiceTypeMaster() {
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreate} disabled={creating || !createName.trim()}>
-                  {creating ? (
+                <Button onClick={handleCreate} disabled={createServiceTypeMutation.isPending || !createName.trim()}>
+                  {createServiceTypeMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating...
@@ -342,8 +307,8 @@ export default function ServiceTypeMaster() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdate} disabled={editing || !editName.trim()}>
-              {editing ? (
+            <Button onClick={handleUpdate} disabled={updateServiceTypeMutation.isPending || !editName.trim()}>
+              {updateServiceTypeMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
@@ -369,8 +334,8 @@ export default function ServiceTypeMaster() {
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? (
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteServiceTypeMutation.isPending}>
+              {deleteServiceTypeMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...

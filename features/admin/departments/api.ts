@@ -33,7 +33,7 @@ export async function createDepartment(payload: CreateDepartmentInput): Promise<
             return res.data[0];
         }
         throw new Error(res.message || "Failed to create department");
-    } catch (error) {
+    } catch (error:unknown) {
         if (error instanceof ZodError) {
             throw new Error(error.message);
         }

@@ -24,21 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiClient } from "@/lib/apiClient";
-
-// ---- Types ----
-interface StatusItem {
-  ServiceRequestStatusID: number;
-  ServiceRequestStatusName: string;
-  Sequence: number | null;
-  Description: string | null;
-  ServiceRequestStatusCssClass: string | null;
-  IsAllowedForTechnician: boolean | null;
-  IsDefault: boolean | null;
-  IsAssigned: boolean | null;
-  IsTerminal: boolean | null;
-  Created: string;
-}
+import { 
+  useStatuses, 
+  useCreateStatus, 
+  useUpdateStatus, 
+  useDeleteStatus, 
+  StatusItem 
+} from "@/features/admin/statuses";
 
 const COLOR_OPTIONS = [
   { value: "bg-amber-500", badge: "bg-amber-100 text-amber-700" },
@@ -63,55 +55,45 @@ const DEFAULT_FORM = {
 };
 
 export default function StatusMaster() {
-  const [statuses, setStatuses] = useState<StatusItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const { data: statuses = [], isLoading: loading, error: queryError } = useStatuses();
+  const createStatusMutation = useCreateStatus();
+  const updateStatusMutation = useUpdateStatus();
+  const deleteStatusMutation = useDeleteStatus();
+
+  const [error, setError] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingStatus, setEditingStatus] = useState<StatusItem | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ---- Fetch all statuses ----
-  const fetchStatuses = async () => {
-    setLoading(true);
-    try {
-      const res = await apiClient.get<StatusItem[]>("/api/admin/status-master");
-      if (res.success) {
-        setStatuses(res.data || []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch statuses:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const submitting = createStatusMutation.isPending || updateStatusMutation.isPending;
 
+  // Sync query error to local state if any
   useEffect(() => {
-    fetchStatuses();
-  }, []);
+    if (queryError) {
+      setError(queryError instanceof Error ? queryError.message : "Failed to load statuses");
+    }
+  }, [queryError]);
 
   // ---- Create status ----
   const handleCreate = async () => {
     if (!formData.ServiceRequestStatusName.trim()) return;
-    setSubmitting(true);
     try {
-      const res = await apiClient.post("/api/admin/status-master", {
+      await createStatusMutation.mutateAsync({
         ServiceRequestStatusName: formData.ServiceRequestStatusName,
-        Sequence: formData.Sequence || undefined,
-        Description: formData.Description || undefined,
+        Sequence: formData.Sequence ? Number(formData.Sequence) : null,
+        Description: formData.Description || null,
         ServiceRequestStatusCssClass: formData.ServiceRequestStatusCssClass,
         IsAllowedForTechnician: formData.IsAllowedForTechnician,
+        IsDefault: formData.IsDefault,
+        IsAssigned: formData.IsAssigned,
+        IsTerminal: formData.IsTerminal,
       });
-      if (res.success) {
-        setIsCreateOpen(false);
-        setFormData(DEFAULT_FORM);
-        await fetchStatuses();
-      }
+      setIsCreateOpen(false);
+      setFormData(DEFAULT_FORM);
     } catch (err) {
       console.error("Failed to create status:", err);
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -134,28 +116,23 @@ export default function StatusMaster() {
   // ---- Update status ----
   const handleUpdate = async () => {
     if (!editingStatus || !formData.ServiceRequestStatusName.trim()) return;
-    setSubmitting(true);
     try {
-      const res = await apiClient.patch(
-        `/api/admin/status-master/${editingStatus.ServiceRequestStatusID}`,
-        {
-          ServiceRequestStatusName: formData.ServiceRequestStatusName,
-          Sequence: formData.Sequence || undefined,
-          Description: formData.Description || undefined,
-          ServiceRequestStatusCssClass: formData.ServiceRequestStatusCssClass,
-          IsAllowedForTechnician: formData.IsAllowedForTechnician,
-        }
-      );
-      if (res.success) {
-        setIsEditOpen(false);
-        setEditingStatus(null);
-        setFormData(DEFAULT_FORM);
-        await fetchStatuses();
-      }
+      await updateStatusMutation.mutateAsync({
+        ServiceRequestStatusID: editingStatus.ServiceRequestStatusID,
+        ServiceRequestStatusName: formData.ServiceRequestStatusName,
+        Sequence: formData.Sequence ? Number(formData.Sequence) : null,
+        Description: formData.Description || null,
+        ServiceRequestStatusCssClass: formData.ServiceRequestStatusCssClass,
+        IsAllowedForTechnician: formData.IsAllowedForTechnician,
+        IsDefault: formData.IsDefault,
+        IsAssigned: formData.IsAssigned,
+        IsTerminal: formData.IsTerminal,
+      });
+      setIsEditOpen(false);
+      setEditingStatus(null);
+      setFormData(DEFAULT_FORM);
     } catch (err) {
       console.error("Failed to update status:", err);
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -163,10 +140,7 @@ export default function StatusMaster() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this status?")) return;
     try {
-      const res = await apiClient.delete(`/api/admin/status-master/${id}`);
-      if (res.success) {
-        setStatuses((prev) => prev.filter((s) => s.ServiceRequestStatusID !== id));
-      }
+      await deleteStatusMutation.mutateAsync(id);
     } catch (err) {
       console.error("Failed to delete status:", err);
     }
