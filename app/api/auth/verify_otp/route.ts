@@ -1,4 +1,4 @@
-import { generateToken } from "@/lib/auth";
+import { generateToken, ROLES, setOptionsForToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { IVerifyOtpBody } from "@/types";
@@ -59,16 +59,16 @@ export async function POST(req: NextRequest) {
 
         const token = generateToken({
             userId: newUser.UserID.toString(),
-            role: newUser.Role ?? "user"
+            role: (newUser.Role as ROLES) || ROLES.USER
         });
-
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
             message: "User verified successfully",
             data: [newUser],
             token: token
         });
-
+        setOptionsForToken(token, response);
+        return response;
 
     } catch (error) {
         return NextResponse.json({

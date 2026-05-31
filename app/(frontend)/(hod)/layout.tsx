@@ -4,16 +4,17 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
-import { getCookie } from "@/lib/cookie";
+import { getRole } from "@/lib/cookie";
+import { ROLES } from "@/lib/auth";
 
 export default function HODLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
 
-  useEffect(() => {
-    const role = getCookie("user_role")?.toLowerCase();
+  async function getRoleFromApi(){
+    const role = await getRole();
     // HOD can access HOD dashboard
-    if (role === "hod") {
+    if (role === ROLES.HOD) {
       setAuthorized(true);
       
     } else {
@@ -22,7 +23,10 @@ export default function HODLayout({ children }: { children: React.ReactNode }) {
       };
       router.replace(dashboardMap[role ?? ""] || "/login");
     }
-  }, [router]);
+  }
+  useEffect(()=>{
+    getRoleFromApi();
+  },[])
 
   if (!authorized) {
     return (

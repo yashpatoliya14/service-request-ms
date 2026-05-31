@@ -4,24 +4,30 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
-import { getCookie } from "@/lib/cookie";
+import { getRole } from "@/lib/cookie";
+import { ROLES } from "@/lib/auth";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
 
-  useEffect(() => {
-    const role = getCookie("user_role")?.toLowerCase();
-    if (role === "admin") {
+  
+     async function getRoleFromApi() {
+    const role = await getRole();
+    if (role === ROLES.ADMIN) {
       setAuthorized(true);
     } else {
       // Redirect non-admin users to their dashboard
       const dashboardMap: Record<string, string> = {
-        hod: "/hod-dashboard",
+        [ROLES.HOD]: "/hod-dashboard",
       };
       router.replace(dashboardMap[role ?? ""] || "/login");
     }
-  }, [router]);
+  }
+  
+  useEffect(() => {
+    getRoleFromApi();
+  }, []);
 
   if (!authorized) {
     return (

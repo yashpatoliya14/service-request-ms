@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { generateToken } from "@/lib/auth";
+import { generateToken, ROLES, setOptionsForToken } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         // Generate JWT token with role information
         const token = generateToken({
             userId: user.UserID.toString(),
-            role: user.Role || "User",
+            role: (user.Role as ROLES) || ROLES.USER,
         });
 
         // Create response with token
@@ -63,24 +63,7 @@ export async function POST(req: NextRequest) {
             token
         }, { status: 200 });
 
-        // Set the JWT as an httpOnly cookie
-        response.cookies.set("auth_token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7, // 7 days
-            path: "/"
-        });
-
-        // Also set user_role cookie for client-side routing
-        response.cookies.set("user_role", user.Role || "User", {
-            httpOnly: false,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7,
-            path: "/"
-        });
-
+        setOptionsForToken(token,response);
         return response;
     } catch (error: any) {
         console.error("Login error:", error);

@@ -2,6 +2,8 @@
 // Common Types — Shared domain models used by both backend and frontend
 // =============================================================================
 
+import { ROLES } from "@/lib/auth";
+
 // ---------------------------------------------------------------------------
 // Auth
 // ---------------------------------------------------------------------------
@@ -22,7 +24,7 @@ export interface TokenPayload {
 export interface UserProfile {
   UserID: string;
   Email: string;
-  Role: string;
+  Role: ROLES;
   FullName: string;
   Username: string;
   ProfilePhoto?: string;

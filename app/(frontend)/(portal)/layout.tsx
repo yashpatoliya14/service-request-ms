@@ -4,25 +4,29 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
-import { getCookie } from "@/lib/cookie";
+import { getRole } from "@/lib/cookie";
+import { ROLES } from "@/lib/auth";
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
   const [sidebarVariant, setSidebarVariant] = useState<"portal" | "technician">("portal");
 
-  useEffect(() => {
-    const role = getCookie("user_role")?.toLowerCase();
-    if (role === "user" || role === "technician") {
+  async function getRoleFromApi(){
+    const role = await getRole();
+    if (role === ROLES.USER || role === ROLES.TECHNICIAN) {
       setAuthorized(true);
-      if (role === "technician") {
+      if (role === ROLES.TECHNICIAN) {
         setSidebarVariant("technician");
         router.replace("/technician");
       }
     } else {
       router.replace("/login");
     }
-  }, [router]);
+  }
+  useEffect(()=>{
+    getRoleFromApi();
+  },[])
 
   if (!authorized) {
     return (

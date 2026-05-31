@@ -37,8 +37,8 @@ export default function ProfilePage() {
       const response = await fetch("/api/auth/me")
       const result = await response.json()
       
-      if (result.success && result.data.length > 0) {
-        const userData = result.data[0]
+      if (result.success && result.data) {
+        const userData = result.data
         setProfile(userData)
         setFormData({
           FullName: userData.FullName || "",

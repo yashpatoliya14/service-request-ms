@@ -4,15 +4,16 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
-import { getCookie } from "@/lib/cookie";
+import { getRole } from "@/lib/cookie";
+import { ROLES } from "@/lib/auth";
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [authorized, setAuthorized] = useState(false);
   const [sidebarVariant, setSidebarVariant] = useState<"admin" | "portal" | "hod" | "technician">("portal");
 
-  useEffect(() => {
-    const role = getCookie("user_role")?.toLowerCase();
+  async function getRoleFromApi() {
+    const role = await getRole();
     
     if (!role) {
       router.replace("/login");
@@ -22,16 +23,20 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
     // Set authorized and determine sidebar variant based on role
     setAuthorized(true);
     
-    if (role === "admin") {
+    if (role === ROLES.ADMIN) {
       setSidebarVariant("admin");
-    } else if (role === "hod") {
+    } else if (role === ROLES.HOD) {
       setSidebarVariant("hod");
-    } else if(role==="technician"){
+    } else if (role === ROLES.TECHNICIAN) {
       setSidebarVariant("technician");
-    } else{
+    } else {
       setSidebarVariant("portal");
     }
-  }, [router]);
+  }
+
+  useEffect(() => {
+    getRoleFromApi();
+  }, []);
 
   if (!authorized) {
     return (

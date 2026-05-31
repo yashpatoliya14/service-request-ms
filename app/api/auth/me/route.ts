@@ -1,4 +1,4 @@
-import { getDetailsFromToken } from "@/lib/auth";
+import { getDetailsFromToken, ROLES } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { UserProfile } from "@/types";
@@ -22,14 +22,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
         success: true,
         message: "Authenticated",
-        data: [{
+        data: {
             UserID: updateUser?.UserID.toString() || "",
             Email: updateUser?.Email || "",
-            Role: updateUser?.Role || "",
+            Role: updateUser?.Role as ROLES || ROLES.USER,
             FullName: updateUser?.FullName || "",
             Username: updateUser?.Username || "",
             ProfilePhoto: updateUser?.ProfilePhoto || ""
-        } as UserProfile]
+        } as UserProfile
     }, { status: 200 });
 }
 

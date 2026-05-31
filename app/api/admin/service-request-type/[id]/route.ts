@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redisKeys } from "@/lib/redis-keys";
+import { redis } from "@/lib/redis";
 
 // get service request type by id 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 
     try {   
         const { id } = await params;
+
         //get the service type Data
         const serviceRequestType = await prisma.serviceRequestType.findFirst({
             where: {
@@ -17,6 +20,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
                 ServiceType:true
             }
         })
+
+        
         if (serviceRequestType) {
             return NextResponse.json({ success: true, message: "Get Service Request Type Successfull", data: serviceRequestType ? [serviceRequestType] : [] } as ApiResponse, { status: 200 });
         } else {
@@ -35,6 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const { id } = await params;
         const body = await req.json();
         const { RequestTypeName,DefaultPriority,IsActive,ServiceTypeID,ServiceDeptID } = body;
+        await redis.del(redisKeys.requestTypes.key);
         //update the Person Master Data
         const serviceRequestType = await prisma.serviceRequestType.update({
             data: {
@@ -63,7 +69,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     try {
         const { id } = await params;
-
+        await redis.del(redisKeys.requestTypes.key);
         //delete the service type Data
         const serviceRequestType = await prisma.serviceRequestType.delete({
             where: {

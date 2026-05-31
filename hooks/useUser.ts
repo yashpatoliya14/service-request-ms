@@ -8,9 +8,9 @@ export function useUser(){
     return useQuery({
         queryKey: queryKeys.user,
         queryFn: async () => {
-            const res = await apiClient.get<UserProfile[]>("/api/auth/me");
+            const res = await apiClient.get<UserProfile>("/api/auth/me");
             if (res.success && res.data) {
-                return res.data[0];
+                return res.data;
             }
             throw new Error(res.message || "Failed to fetch user");
         },

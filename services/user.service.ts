@@ -4,9 +4,9 @@ import { UserProfile } from "@/types";
 
 export const fetchUser = async (): Promise<UserProfile | null> => {
     try {
-        const res = await apiClient.get<UserProfile[]>("/api/auth/me");
-        if (res.success && res.data?.[0]) {
-            return res.data[0];
+        const res = await apiClient.get<UserProfile>("/api/auth/me");
+        if (res.success && res.data) {
+            return res.data;
         }
         return null;
     } catch (err) {
