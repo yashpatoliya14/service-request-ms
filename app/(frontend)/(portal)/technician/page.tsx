@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   Wrench,
   CheckCircle2,
@@ -21,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { apiClient } from "@/lib/apiClient";
-import { toast } from "react-hot-toast";
-import {  getStatusBadge } from "@/lib/statusServices";
+import { getStatusBadge } from "@/lib/statusServices";
+import { useUser } from "@/hooks/useUser";
+import { useStatuses } from "@/features/admin/statuses/hooks";
+import { useTechnicianRequests, useUpdateTechnicianRequestStatus } from "@/features/technician/hooks";
 
 // ---- Types ----
 interface ServiceRequest {
@@ -60,117 +60,18 @@ interface ServiceRequestStatus {
 }
 
 export default function TechnicianDashboard() {
-  const [requests, setRequests] = useState<ServiceRequest[]>([]);
-  const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const { data: user, isLoading: userLoading } = useUser();
+  const { data: statusesData = [], isLoading: statusesLoading } = useStatuses();
+  const statuses = statusesData as unknown as ServiceRequestStatus[];
+  
+  const { data: requests = [], isLoading: requestsLoading } = useTechnicianRequests(user?.UserID);
+  const updateStatusMutation = useUpdateTechnicianRequestStatus(user?.UserID);
 
-  // ---- Fetch user ----
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await apiClient.get<UserInfo[]>("/api/auth/me");
-        
-        if (res.success && res.data?.[0]) setUser(res.data[0] as unknown as UserInfo);
-      } catch (err) {
-        console.error("Failed to fetch user:", err);
-        toast.error("Failed to load user data");
-      }
-    };
-    fetchUser();
-  }, []);
-
-  // ---- Fetch statuses ----
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        const res = await apiClient.get<ServiceRequestStatus[]>("/api/admin/status-master");
-        if (res.success && res.data) setStatuses(res.data);
-        console.log(res.data);
-      } catch (err) {
-        console.error("Failed to fetch statuses:", err);
-      }
-    };
-    fetchStatuses();
-  }, []);
-
-  // ---- Fetch requests assigned to this technician ----
-  const fetchRequests = async () => {
-    if (!user) return;
-    setLoading(true);
-    
-    let retryCount = 0;
-    const maxRetries = 3;
-    
-    const attemptFetch = async () => {
-      try {
-        // Try fetching by technician's user ID
-        const res = await apiClient.get<ServiceRequest[][]>(
-          `/api/portal/technician/${user.UserID}`
-        );
-        
-        if (res.success && res.data?.[0]) {
-          setRequests(res.data[0]);
-          return true;
-        } else {
-          setRequests([]);
-          return false;
-        }
-      } catch (err) {
-        console.error("Failed to fetch technician requests:", err);
-        setRequests([]);
-        return false;
-      }
-    };
-
-    // Retry logic with exponential backoff
-    let success = false;
-    while (retryCount < maxRetries) {
-      success = await attemptFetch();
-      if (success) break;
-      
-      retryCount++;
-      if (retryCount < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
-      }
-    }
-    
-    if (!success) {
-      toast.error("Failed to load requests after multiple attempts");
-    }
-    
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    if (user) fetchRequests();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  const loading = userLoading || statusesLoading || requestsLoading;
 
   // ---- Update request status ----
   const handleUpdateStatus = async (requestId: string, newStatusId: string) => {
-    setUpdatingId(requestId);
-    try {
-      const res = await apiClient.patch(`/api/portal/technician/${requestId}`, {
-        StatusID: newStatusId,
-        ServiceRequestTypeID: requestId,
-      });
-      if (res.success) {
-        // Update local state
-        setRequests((prev) =>
-          prev.map((r) =>
-            String(r.ServiceRequestID) === String(requestId)
-              ? { ...r, StatusID: newStatusId }
-              : r
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Failed to update status:", err);
-    } finally {
-      setUpdatingId(null);
-    }
+    updateStatusMutation.mutate({ requestId, newStatusId });
   };
 
   // ---- Helpers ----
@@ -286,7 +187,7 @@ export default function TechnicianDashboard() {
           <div className="space-y-4">
             {requests.map((task) => {
               const priorityLabel = getPriorityLabel(task.Priority);
-              const isUpdating = updatingId === String(task.ServiceRequestID);
+              const isUpdating = updateStatusMutation.isPending && updateStatusMutation.variables?.requestId === String(task.ServiceRequestID);
               const technicianStatuses = statuses.filter(s => s.IsAllowedForTechnician);
 
               return (

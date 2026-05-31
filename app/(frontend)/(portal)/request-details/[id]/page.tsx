@@ -5,11 +5,16 @@ import { ArrowLeft, MessageCircle, Send, Clock, Loader2, User, AlertCircle } fro
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { toast } from "react-hot-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { apiClient } from "@/lib/apiClient";
-import { StatusInfo, getStatusBadge } from "@/lib/statusServices";
+import { getStatusBadge } from "@/lib/statusServices";
 import { socket } from "@/lib/socket";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-key";
+import { useUser } from "@/hooks/useUser";
+import { useStatuses } from "@/features/admin/statuses/hooks";
+import { usePersonMappings } from "@/features/admin/person-mappings/hooks";
+import { useRequestDetail, useRequestChat } from "@/features/portal/hooks";
+
 // ---- Types ----
 interface ServiceRequest {
   ServiceRequestID: string;
@@ -34,7 +39,6 @@ interface ServiceRequest {
   } | null;
 }
 
-
 interface Reply {
   ReplyID: string;
   Message: string;
@@ -44,12 +48,6 @@ interface Reply {
   Users?: { FullName: string; Role?: string } | null;
 }
 
-interface UserInfo {
-  UserID: string;
-  FullName: string;
-  Role: string;
-}
-
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -57,19 +55,23 @@ interface PageProps {
 export default function RequestDetails({ params }: PageProps) {
   const resolvedParams = use(params);
   const ServiceRequestID = resolvedParams.id;
+  const queryClient = useQueryClient();
 
-  const [request, setRequest] = useState<ServiceRequest | null>(null);
-  const [statuses, setStatuses] = useState<StatusInfo[]>([]);
-  const [replies, setReplies] = useState<Reply[]>([]);
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [mappings, setMappings] = useState<any[]>([]);
-  const [assigning, setAssigning] = useState(false);
+  const { data: user, isLoading: userLoading } = useUser();
+  const { data: statusesData = [], isLoading: statusesLoading } = useStatuses();
+  const statuses = statusesData as any[];
+
+  const { data: request, isLoading: requestLoading } = useRequestDetail(ServiceRequestID);
+  const { data: messages = [], isLoading: chatLoading } = useRequestChat(ServiceRequestID);
+  
+  const { data: mappings = [] } = usePersonMappings();
+
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const loading = userLoading || statusesLoading || requestLoading || chatLoading;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -81,94 +83,6 @@ export default function RequestDetails({ params }: PageProps) {
     if (role === "technician") return "/technician";
     return "/request-details";
   }, [user]);
-
-  // ---- Fetch user info ----
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await apiClient.get<UserInfo[]>("/api/auth/me");
-        if (res.success && res.data?.[0]) {
-          setUser(res.data[0] as unknown as UserInfo);
-        }
-      } catch (err) {
-        console.error("Failed to fetch user:", err);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  // ---- Fetch Statuses ----
-  useEffect(() => {
-    const fetchStatuses = async () => {
-      try {
-        const res = await apiClient.get<StatusInfo[]>("/api/admin/status-master");
-        if (res.success && res.data) {
-          setStatuses(res.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch statuses:", err);
-      }
-    };
-    fetchStatuses();
-  }, []);
-
-  // ---- Fetch request details ----
-  const fetchRequest = async () => {
-    setLoading(true);
-    try {
-      const res = await apiClient.get<ServiceRequest[]>(`/api/portal/requestor/${ServiceRequestID}`);
-      if (res.success && res.data?.[0]) {
-        setRequest(res.data[0]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch request:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRequest();
-  }, [ServiceRequestID]);
-
-  // ---- Fetch Mappings for Assigning (if HOD) ----
-  useEffect(() => {
-    const fetchMappings = async () => {
-      try {
-        const res = await apiClient.get<any[]>("/api/admin/person-mapping");
-        if (res.success && res.data) {
-          setMappings(res.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch mappings:", err);
-      }
-    };
-    if (user?.Role?.toLowerCase() === "hod") {
-      fetchMappings();
-    }
-  }, [user]);
-
-  //fetch previous messages
-  useEffect(() => {
-    const fetchMessages = async () => {
-      setLoading(true);
-      try {
-        const res = await apiClient.get<any[]>(`/api/chat/${ServiceRequestID}`);
-        if (res.success && res.data) {
-          setMessages(res.data);
-        }else{
-          toast.error(res.message);
-        }
-      } catch (err) {
-        toast.error(`Failed to fetch messages ${err}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMessages();
-  }, [ServiceRequestID]);
-
-
 
   useEffect(() => {
     // join the room where both users join on same service request id 
@@ -192,7 +106,6 @@ export default function RequestDetails({ params }: PageProps) {
       return;
     }
 
-
     socket.emit("send_message", {
       message,
       ReplyByID: user?.UserID,
@@ -200,16 +113,15 @@ export default function RequestDetails({ params }: PageProps) {
       ServiceRequestID: ServiceRequestID,
     });
 
-    // We keep message content in case they need to re-send it due to error,
-    // so we clear it only on successful `receive_message` inside the socket.on listener!
-    // But for smoother UI feeling immediately, we can clear it and only set loading:
     setMessage("");
   };
 
   useEffect(() => {
     // When a message is successfully received back via socket:
     const handleReceiveMessage = (data: any) => {
-      setMessages((prev) => [...prev, data]);
+      queryClient.setQueryData<any[]>(queryKeys.portal.requestChat(ServiceRequestID), (old) => {
+        return old ? [...old, data] : [data];
+      });
       setSending(false);
       setError(null);
     };
@@ -219,7 +131,7 @@ export default function RequestDetails({ params }: PageProps) {
     return () => {
       socket.off("receive_message", handleReceiveMessage);
     };
-  }, []);
+  }, [ServiceRequestID, queryClient]);
 
   if (loading) {
     return (

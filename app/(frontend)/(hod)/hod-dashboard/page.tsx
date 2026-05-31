@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Users,
   UserCheck,
@@ -40,10 +40,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiClient } from "@/lib/apiClient";
-import { getStatusBadge, getStatusLabel, StatusInfo } from "@/lib/statusServices";
+import { getStatusBadge, getStatusLabel } from "@/lib/statusServices";
 import Link from "next/link";
-import { toast } from "react-hot-toast";
+import { useHodRequests, useHodTechnicians, useAssignTechnician, useEvaluateRequest } from "@/features/hod/hooks";
+import { useStatuses } from "@/features/admin/statuses/hooks";
 
 // ---- Types ----
 interface ServiceRequest {
@@ -71,12 +71,16 @@ interface DeptPerson {
 }
 
 export default function HODDashboard() {
-  const [requests, setRequests] = useState<ServiceRequest[]>([]);
-  const [technicians, setTechnicians] = useState<DeptPerson[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [assigning, setAssigning] = useState<string | null>(null);
+  const { data: requests = [], isLoading: requestsLoading } = useHodRequests();
+  const { data: technicians = [], isLoading: techniciansLoading } = useHodTechnicians();
+  const { data: statusesData = [], isLoading: statusesLoading } = useStatuses();
+  
+  // Convert StatusItem[] to StatusInfo[]
+  const statuses = statusesData as any[];
+
+  const loading = requestsLoading || techniciansLoading || statusesLoading;
+
   const [isEvaluateModalOpen, setIsEvaluateModalOpen] = useState(false);
-  const [evaluating, setEvaluating] = useState<string | null>(null);
   const [closedStatus, setClosedStatus] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -84,127 +88,34 @@ export default function HODDashboard() {
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
-  const [statuses, setStatuses] = useState<StatusInfo[]>([]);
-
-  // ---- Fetch all requests ----
-  const fetchRequests = async () => {
-    setLoading(true);
-    try {
-      const res = await apiClient.get<ServiceRequest[][]>("/api/hod");
-      if (res.success && res.data?.[0]) {
-        setRequests(res.data[0]);
-      } else {
-        setRequests([]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch requests:", err);
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchStatuses = async () => {
-    try {
-      const res = await apiClient.get<StatusInfo[]>("/api/admin/status-master");
-      if (res.success && res.data) {
-        setStatuses(res.data);
-        
-      }
-    } catch (err) {
-      console.error("Failed to fetch status:", err);
-    }
-  };
-
-  // ---- Fetch all personnel (technicians) ----
-  const fetchTechnicians = async () => {
-    try {
-      const res = await apiClient.get<DeptPerson[]>("/api/hod/technicians");
-      if (res.success && res.data) {
-        setTechnicians(res.data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch technicians:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-    fetchTechnicians();
-    fetchStatuses();
-  }, []);
+  const assignMutation = useAssignTechnician();
+  const evaluateMutation = useEvaluateRequest();
 
   // ---- Assign technician to request ----
   const handleAssign = async (deptPersonId: string) => {
     if (!selectedRequest) return;
-    setAssigning(deptPersonId);
-    try {
-      const res = await apiClient.post("/api/hod", {
-        ServiceRequestID: selectedRequest.ServiceRequestID,
-        AssignedToID: deptPersonId,
-      });
-      if (res.success) {
-        // Find the assigned status dynamically
-        const assignedStatus = statuses.find(s => s.IsAssigned === true);
-        const assignedStatusId = assignedStatus ? String(assignedStatus.ServiceRequestStatusID) : selectedRequest.StatusID || "3";
-
-        // Update local state
-        setRequests((prev) =>
-          prev.map((req) =>
-            String(req.ServiceRequestID) === String(selectedRequest.ServiceRequestID)
-              ? {
-                  ...req,
-                  AssignedToID: deptPersonId,
-                  StatusID: assignedStatusId,
-                  ServiceRequestStatus: assignedStatus
-                    ? {
-                        ServiceRequestStatusName: assignedStatus.ServiceRequestStatusName,
-                        ServiceRequestStatusCssClass: assignedStatus.ServiceRequestStatusCssClass,
-                        IsTerminal: assignedStatus.IsTerminal ?? null,
-                        IsDefault: assignedStatus.IsDefault ?? null,
-                        IsAssigned: assignedStatus.IsAssigned ?? null,
-                      }
-                    : req.ServiceRequestStatus,
-                }
-              : req
-          )
-        );
-
-        toast.success("Technician assigned successfully!");
+    assignMutation.mutate({
+      requestId: selectedRequest.ServiceRequestID,
+      deptPersonId,
+    }, {
+      onSuccess: () => {
         setIsAssignModalOpen(false);
         setSelectedRequest(null);
       }
-    } catch (err) {
-      console.error("Failed to assign technician:", err);
-    } finally {
-      setAssigning(null);
-    }
+    });
   };
 
   const handleEvaluate = async (requestId: string) => {
-    setEvaluating(requestId);
-    try {
-      const evaluationNotes = (document.getElementById('evaluationNotes') as HTMLTextAreaElement)?.value;
-      
-      const res = await apiClient.post("/api/hod/evaluate", {
-        ServiceRequestID: requestId,
-        StatusID: closedStatus,
-        EvaluationNotes: evaluationNotes
-      });
-
-      if (res.success) {
-        toast.success("Request evaluated successfully!");
+    const evaluationNotes = (document.getElementById('evaluationNotes') as HTMLTextAreaElement)?.value;
+    evaluateMutation.mutate({
+      requestId,
+      statusId: closedStatus,
+      evaluationNotes,
+    }, {
+      onSuccess: () => {
         setIsEvaluateModalOpen(false);
-        fetchRequests(); // Refresh the requests list
-      } else {
-        toast.error(res.message || "Failed to evaluate request");
       }
-    } catch (err) {
-      console.error("Evaluation error:", err);
-      toast.error("Evaluation failed");
-    } finally {
-      setEvaluating(null);
-    }
+    });
   };
 
 
@@ -502,7 +413,7 @@ export default function HODDashboard() {
                 <button
                   key={String(tech.DeptPersonID)}
                   onClick={() => handleAssign(String(tech.DeptPersonID))}
-                  disabled={assigning !== null}
+                  disabled={assignMutation.isPending}
                   className="group flex w-full items-center justify-between rounded-xl border bg-muted/30 p-4 transition-all hover:border-primary hover:bg-primary/5 hover:shadow-md disabled:opacity-50"
                 >
                   <div className="flex items-center gap-4">
@@ -518,7 +429,7 @@ export default function HODDashboard() {
                       </p>
                     </div>
                   </div>
-                  {assigning === String(tech.DeptPersonID) ? (
+                  {assignMutation.isPending && assignMutation.variables?.deptPersonId === String(tech.DeptPersonID) ? (
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   ) : (
                     <UserPlus className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-primary" />
@@ -597,12 +508,12 @@ export default function HODDashboard() {
             </div>
             <div className="flex justify-end gap-2">
               <Button 
-                disabled={!closedStatus || !!evaluating}
+                disabled={!closedStatus || evaluateMutation.isPending}
                 onClick={() => handleEvaluate(String(selectedRequest?.ServiceRequestID))}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
               >
-                {evaluating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                {evaluating ? "Evaluating..." : "Submit Evaluation"}
+                {evaluateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                {evaluateMutation.isPending ? "Evaluating..." : "Submit Evaluation"}
               </Button>
             </div>
           </div>

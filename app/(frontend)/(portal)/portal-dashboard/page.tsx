@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Plus,
   Search,
@@ -42,23 +42,31 @@ import {
 } from "@/components/ui/table";
 import { getStatusBadge } from "@/lib/statusServices";
 import Link from "next/link";
-import { fetchUser } from "@/services/user.service";
+import { useUser } from "@/hooks/useUser";
+import { useStatuses } from "@/features/admin/statuses/hooks";
+import { useDepartments } from "@/features/admin/departments/hooks";
+import { useRequestTypes } from "@/features/admin/request-types/hooks";
+import { usePortalRequests, useCreatePortalRequest, useCancelPortalRequest } from "@/features/portal/hooks";
 
 import { UserProfile, ServiceRequestType, ServiceRequest, ServiceRequestStatus, Department } from "@/types";
-import { apiClient } from "@/lib/apiClient";
-import { fetchStatuses, fetchDepartments, fetchRequestTypes } from "@/services/request.service";
 
 export default function PortalDashboard() {
+  const { data: user, isLoading: userLoading } = useUser();
+  const { data: requests = [], isLoading: requestsLoading } = usePortalRequests();
+  const { data: statusesData = [], isLoading: statusesLoading } = useStatuses();
+  const { data: departments = [], isLoading: departmentsLoading } = useDepartments();
+  const { data: requestTypes = [], isLoading: requestTypesLoading } = useRequestTypes();
+
+  const statuses = statusesData as unknown as ServiceRequestStatus[];
+
+  const loading = userLoading || requestsLoading || statusesLoading || departmentsLoading || requestTypesLoading;
+
+  const createRequestMutation = useCreatePortalRequest();
+  const cancelRequestMutation = useCancelPortalRequest();
+
+  const submitting = createRequestMutation.isPending;
+
   // ---- State ----
-  const [requests, setRequests] = useState<ServiceRequest[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [requestTypes, setRequestTypes] = useState<ServiceRequestType[]>([]);
-  const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
-  const [user, setUser] = useState<UserProfile | null>(null);
-
-
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -78,47 +86,6 @@ export default function PortalDashboard() {
     description?: string;
   }>({});
 
-  useEffect(() => {
-    const loadAll = async () => {
-      const [userData, statusData, deptData, typeData] = await Promise.all([
-        fetchUser(),
-        fetchStatuses(),
-        fetchDepartments(),
-        fetchRequestTypes(),
-      ]);
-
-      setUser(userData);
-      setStatuses(statusData as ServiceRequestStatus[]);
-      setDepartments(deptData);
-      setRequestTypes(typeData);
-
-      if (userData) {
-        await fetchRequests(userData);
-      } else {
-        setLoading(false);
-      }
-    };
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ---- Fetch all initial data ----
-  const fetchRequests = async (currentUser: UserProfile) => {
-    setLoading(true);
-    try {
-      const res = await apiClient.get<ServiceRequest[][]>("/api/portal/requests");
-      if (res.success && res.data?.[0]) {
-        setRequests(res.data[0]);
-      } else {
-        setRequests([]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch requests:", err);
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
-  };
   // ---- Validate form ----
   const validateForm = () => {
     const errors: { deptId?: string; typeId?: string; subject?: string; description?: string } = {};
@@ -135,39 +102,25 @@ export default function PortalDashboard() {
   // ---- Create new request ----
   const handleCreateRequest = async () => {
     if (!validateForm() || !user) return;
-    setSubmitting(true);
-    try {
-      const res = await apiClient.post("/api/portal/requestor", {
-        ServiceRequestTypeID: formData.typeId,
-        RequestorID: user.UserID,
-        Title: formData.subject.trim(),
-        Description: formData.description,
-        ServiceDepartmentID: formData.deptId,
-      });
-      if (res.success) {
+    createRequestMutation.mutate({
+      ServiceRequestTypeID: formData.typeId,
+      RequestorID: user.UserID,
+      Title: formData.subject.trim(),
+      Description: formData.description,
+      ServiceDepartmentID: formData.deptId,
+    }, {
+      onSuccess: () => {
         setIsModalOpen(false);
         setFormData({ deptId: "", typeId: "", subject: "", description: ""});
         setFormErrors({});
-        await fetchRequests(user);
       }
-    } catch (err) {
-      console.error("Failed to create request:", err);
-    } finally {
-      setSubmitting(false);
-    }
+    });
   };
 
   // ---- Delete / Cancel a request ----
   const handleDeleteRequest = async (id: string) => {
     if (!confirm("Are you sure you want to cancel this request?")) return;
-    try {
-      const res = await apiClient.delete(`/api/portal/requestor/${id}`);
-      if (res.success) {
-        setRequests((prev) => prev.filter((r) => String(r.ServiceRequestID) !== String(id)));
-      }
-    } catch (err) {
-      console.error("Failed to delete request:", err);
-    }
+    cancelRequestMutation.mutate(id);
   };
 
   // ---- Helpers ----

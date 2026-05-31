@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Trash2, ChevronRight, FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,67 +22,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { apiClient } from "@/lib/apiClient";
 import { getStatusLabel, getStatusBadge } from "@/lib/statusServices";
 import { ServiceRequest, ServiceRequestStatus, Department } from "@/types";
-import { fetchStatuses, fetchDepartments } from "@/services/request.service";
+import { useStatuses } from "@/features/admin/statuses/hooks";
+import { useDepartments } from "@/features/admin/departments/hooks";
+import { usePortalHistory, useCancelPortalRequest } from "@/features/portal/hooks";
 
 export default function UserRequestPortal() {
-  // ---- State ----
-  const [requests, setRequests] = useState<ServiceRequest[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [statuses, setStatuses] = useState<ServiceRequestStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: requests = [], isLoading: requestsLoading } = usePortalHistory();
+  const { data: departments = [], isLoading: departmentsLoading } = useDepartments();
+  const { data: statusesData = [], isLoading: statusesLoading } = useStatuses();
+
+  const statuses = statusesData as unknown as ServiceRequestStatus[];
+
+  const loading = requestsLoading || departmentsLoading || statusesLoading;
+
+  const cancelRequestMutation = useCancelPortalRequest();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deptFilter, setDeptFilter] = useState("all");
 
-  // ---- Fetch all initial data ----
-  const fetchRequestHistory = async () => {
-    setLoading(true);
-    try {
-      const res = await apiClient.get<ServiceRequest[][]>("/api/portal/history");
-      if (res.success && res.data?.[0]) {
-        setRequests(res.data[0]);
-      } else {
-        setRequests([]);
-      }
-    } catch (err) {
-      console.error("Failed to fetch requests:", err);
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const loadAll = async () => {
-      const [ statusData, deptData] = await Promise.all([
-        fetchStatuses(),
-        fetchDepartments(),
-      ]);
-
-      setStatuses(statusData as unknown as ServiceRequestStatus[]);
-      setDepartments(deptData as Department[]);
-
-      await fetchRequestHistory();
-    };
-    loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // ---- Cancel / Delete a request ----
   const handleCancelRequest = async (id: string) => {
     if (!confirm("Are you sure you want to cancel this request?")) return;
-    try {
-      const res = await apiClient.delete(`/api/portal/requestor/${id}`);
-      if (res.success) {
-        setRequests((prev) => prev.filter((r) => String(r.ServiceRequestID) !== String(id)));
-      }
-    } catch (err) {
-      console.error("Failed to cancel request:", err);
-    }
+    cancelRequestMutation.mutate(id);
   };
 
   // ---- Filter Logic ----
