@@ -30,6 +30,7 @@ import {
   useDeleteServiceType,
   ServiceType 
 } from "@/features/admin/service-types";
+import { toast } from "react-hot-toast";
 
 export default function ServiceTypeMaster() {
   const { data: serviceTypes = [], isLoading: loading, error: queryError } = useServiceTypes();
@@ -61,42 +62,51 @@ export default function ServiceTypeMaster() {
   }, [queryError]);
 
   // Create service type
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!createName.trim()) return;
-    try {
-      await createServiceTypeMutation.mutateAsync({ ServiceTypeName: createName.trim() });
-      setCreateName("");
-      setCreateOpen(false);
-    } catch (err) {
-      console.error(err);
-    }
+    toast.promise(
+      createServiceTypeMutation.mutateAsync({ ServiceTypeName: createName.trim() }),
+      {
+        loading: "Creating service type...",
+        success: "Service type created successfully!",
+        error: (err) => err.message || "Failed to create service type"
+      }
+    );
+    setCreateName("");
+    setCreateOpen(false);
   };
 
   // Update service type
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!editItem || !editName.trim()) return;
-    try {
-      await updateServiceTypeMutation.mutateAsync({
+    toast.promise(
+      updateServiceTypeMutation.mutateAsync({
         ServiceTypeID: editItem.ServiceTypeID,
         ServiceTypeName: editName.trim(),
-      });
-      setEditOpen(false);
-      setEditItem(null);
-      setEditName("");
-    } catch (err) {
-      console.error(err);
-    }
+      }),
+      {
+        loading: "Updating service type...",
+        success: "Service type updated successfully!",
+        error: (err) => err.message || "Failed to update service type"
+      }
+    );
+    setEditOpen(false);
+    setEditItem(null);
+    setEditName("");
   };
 
   // Delete service type
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteItem) return;
-    try {
-      await deleteServiceTypeMutation.mutateAsync(deleteItem.ServiceTypeID);
-      setDeleteOpen(false);
-    } catch (err) {
-      console.error(err);
-    }
+    toast.promise(
+      deleteServiceTypeMutation.mutateAsync(deleteItem.ServiceTypeID),
+      {
+        loading: "Deleting service type...",
+        success: "Service type deleted successfully!",
+        error: (err) => err.message || "Failed to delete service type"
+      }
+    );
+    setDeleteOpen(false);
   };
 
   // Open edit dialog

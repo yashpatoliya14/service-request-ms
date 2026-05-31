@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
-import { toast } from "react-hot-toast";
 import {
     getServiceTypes,
     createServiceType,
@@ -24,11 +23,7 @@ export function useCreateServiceType() {
     return useMutation({
         mutationFn: (payload: CreateServiceTypeInput) => createServiceType(payload),
         onSuccess: () => {
-            toast.success("Service type created successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.serviceTypes });
-        },
-        onError: (err: any) => {
-            toast.error(err.message || "Failed to create service type");
         }
     });
 }
@@ -49,14 +44,12 @@ export function useUpdateServiceType() {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Service type updated successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.serviceTypes });
         },
         onError: (err: any, variables, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(queryKeys.serviceTypes, context.previous);
             }
-            toast.error(err.message || "Failed to update service type");
         }
     });
 }
@@ -77,14 +70,12 @@ export function useDeleteServiceType() {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Service type deleted successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.serviceTypes });
         },
         onError: (err: any, variables, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(queryKeys.serviceTypes, context.previous);
             }
-            toast.error(err.message || "Failed to delete service type");
         }
     });
 }

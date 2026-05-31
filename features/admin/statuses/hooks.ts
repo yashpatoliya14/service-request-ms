@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
-import { toast } from "react-hot-toast";
 import {
     getStatuses,
     createStatus,
@@ -24,11 +23,7 @@ export function useCreateStatus() {
     return useMutation({
         mutationFn: (payload: CreateStatusInput) => createStatus(payload),
         onSuccess: () => {
-            toast.success("Status created successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.statuses });
-        },
-        onError: (err: any) => {
-            toast.error(err.message || "Failed to create status");
         }
     });
 }
@@ -49,14 +44,12 @@ export function useUpdateStatus() {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Status updated successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.statuses });
         },
         onError: (err: any, variables, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(queryKeys.statuses, context.previous);
             }
-            toast.error(err.message || "Failed to update status");
         }
     });
 }
@@ -77,14 +70,12 @@ export function useDeleteStatus() {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Status deleted successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.statuses });
         },
         onError: (err: any, variables, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(queryKeys.statuses, context.previous);
             }
-            toast.error(err.message || "Failed to delete status");
         }
     });
 }

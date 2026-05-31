@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import { getStatusBadge, getStatusLabel } from "@/lib/statusServices";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
 import { useHodRequests, useHodTechnicians, useAssignTechnician, useEvaluateRequest } from "@/features/hod/hooks";
 import { useStatuses } from "@/features/admin/statuses/hooks";
 
@@ -92,30 +93,38 @@ export default function HODDashboard() {
   const evaluateMutation = useEvaluateRequest();
 
   // ---- Assign technician to request ----
-  const handleAssign = async (deptPersonId: string) => {
+  const handleAssign = (deptPersonId: string) => {
     if (!selectedRequest) return;
-    assignMutation.mutate({
-      requestId: selectedRequest.ServiceRequestID,
-      deptPersonId,
-    }, {
-      onSuccess: () => {
-        setIsAssignModalOpen(false);
-        setSelectedRequest(null);
+    toast.promise(
+      assignMutation.mutateAsync({
+        requestId: selectedRequest.ServiceRequestID,
+        deptPersonId,
+      }),
+      {
+        loading: "Assigning technician...",
+        success: "Technician assigned successfully!",
+        error: (err) => err.message || "Failed to assign technician"
       }
-    });
+    );
+    setIsAssignModalOpen(false);
+    setSelectedRequest(null);
   };
 
-  const handleEvaluate = async (requestId: string) => {
+  const handleEvaluate = (requestId: string) => {
     const evaluationNotes = (document.getElementById('evaluationNotes') as HTMLTextAreaElement)?.value;
-    evaluateMutation.mutate({
-      requestId,
-      statusId: closedStatus,
-      evaluationNotes,
-    }, {
-      onSuccess: () => {
-        setIsEvaluateModalOpen(false);
+    toast.promise(
+      evaluateMutation.mutateAsync({
+        requestId,
+        statusId: closedStatus,
+        evaluationNotes,
+      }),
+      {
+        loading: "Evaluating request...",
+        success: "Request evaluated successfully!",
+        error: (err) => err.message || "Evaluation failed"
       }
-    });
+    );
+    setIsEvaluateModalOpen(false);
   };
 
 

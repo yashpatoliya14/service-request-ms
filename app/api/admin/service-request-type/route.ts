@@ -8,12 +8,12 @@ import { redisKeys } from "@/lib/redis-keys";
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { ServiceTypeID,ServiceDeptID,ServiceRequestTypeName,DefaultPriority,IsActive } = body;
+        const { ServiceTypeID,ServiceDeptID,RequestTypeName,DefaultPriority,IsActive } = body;
         await redis.del(redisKeys.requestTypes.key);
         //create a service request type
         const serviceRequestType = await prisma.serviceRequestType.create({
             data: {
-                RequestTypeName:ServiceRequestTypeName,
+                RequestTypeName:RequestTypeName,
                 ServiceTypeID:BigInt(ServiceTypeID),
                 ServiceDeptID:BigInt(ServiceDeptID),
                 DefaultPriority: DefaultPriority.toUpperCase(),
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
             const parsed = JSON.parse(redisData);
             console.log("from cached");
             
-            return NextResponse.json({ success: true, message: "Get Service Request Type Successfull", data: parsed ? [parsed] : [] } as ApiResponse, { status: 200 });
+            return NextResponse.json({ success: true, message: "Get Service Request Type Successfull", data: parsed ? parsed : [] } as ApiResponse, { status: 200 });
         }
         //get the Service Request Types Data
         const serviceRequestTypes = await prisma.serviceRequestType.findMany({

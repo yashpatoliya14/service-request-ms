@@ -32,6 +32,7 @@ import {
   useDeleteDepartment, 
   useUpdateDepartment 
 } from "@/features/admin/departments";
+import { toast } from "react-hot-toast";
 
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
@@ -59,68 +60,62 @@ export default function DepartmentMaster() {
   // Create dialog state
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
-  const [creating, setCreating] = useState(false);
 
   // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
   const [editDept, setEditDept] = useState<Department | null>(null);
   const [editName, setEditName] = useState("");
-  const [editing, setEditing] = useState(false);
 
   // Delete dialog state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteDept, setDeleteDept] = useState<Department | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const queryClient = useQueryClient();
 
   // Create department
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!createName.trim()) return;
-    try {
-      setCreating(true);
-      await createMutation.mutateAsync({ DeptName: createName.trim() });
-      setCreateName("");
-      setCreateOpen(false);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to create department");
-    } finally {
-      setCreating(false);
-    }
+    toast.promise(
+      createMutation.mutateAsync({ DeptName: createName.trim() }),
+      {
+        loading: "Creating department...",
+        success: "Department created successfully!",
+        error: (err) => err.message || "Failed to create department"
+      }
+    );
+    setCreateName("");
+    setCreateOpen(false);
   };
 
   // Update department
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!editDept || !editName.trim()) return;
-    try {
-      setEditing(true);
-      await updateMutation.mutateAsync({ ServiceDeptID: editDept.ServiceDeptID, DeptName: editName.trim() });
-      setEditOpen(false);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to update department");
-    } finally {
-      setEditing(false);
-    }
+    toast.promise(
+      updateMutation.mutateAsync({ ServiceDeptID: editDept.ServiceDeptID, DeptName: editName.trim() }),
+      {
+        loading: "Updating department...",
+        success: "Department updated successfully!",
+        error: (err) => err.message || "Failed to update department"
+      }
+    );
+    setEditOpen(false);
   };
 
   // Delete department
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteDept) return;
-    try {
-      setDeleting(true);
-      await deleteMutation.mutateAsync(deleteDept.ServiceDeptID);
-      setDeleteOpen(false);
-
-    } catch (err: any) {
-      console.error(err);
-      // Show the API error message (e.g. "Cannot delete — department is in use")
-      const message = err?.data?.message || err?.message || "Failed to delete department";
-      setError(message);
-      setDeleteOpen(false);
-    } finally {
-      setDeleting(false);
-    }
+    toast.promise(
+      deleteMutation.mutateAsync(deleteDept.ServiceDeptID),
+      {
+        loading: "Deleting department...",
+        success: "Department deleted successfully!",
+        error: (err) => {
+          const message = err?.data?.message || err?.message || "Failed to delete department";
+          setError(message);
+          return message;
+        }
+      }
+    );
+    setDeleteOpen(false);
   };
 
   // Open edit dialog
@@ -195,8 +190,8 @@ export default function DepartmentMaster() {
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreate} disabled={creating || !createName.trim()}>
-                  {creating ? (
+                <Button onClick={handleCreate} disabled={createMutation.isPending || !createName.trim()}>
+                  {createMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating...
@@ -377,8 +372,8 @@ export default function DepartmentMaster() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdate} disabled={editing || !editName.trim()}>
-              {editing ? (
+            <Button onClick={handleUpdate} disabled={updateMutation.isPending || !editName.trim()}>
+              {updateMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
@@ -404,8 +399,8 @@ export default function DepartmentMaster() {
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? (
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...

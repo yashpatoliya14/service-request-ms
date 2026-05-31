@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
 import { apiClient } from "@/lib/apiClient";
 import { ServiceRequest } from "@/types";
-import { toast } from "react-hot-toast";
 
 export function usePortalRequests() {
     return useQuery({
@@ -35,12 +34,8 @@ export function useCreatePortalRequest() {
             return res.data;
         },
         onSuccess: () => {
-            toast.success("Service request submitted successfully!");
             queryClient.invalidateQueries({ queryKey: queryKeys.portal.requests() });
             queryClient.invalidateQueries({ queryKey: queryKeys.portal.history() });
-        },
-        onError: (err: any) => {
-            toast.error(err.message || "Failed to submit request");
         }
     });
 }
@@ -75,7 +70,6 @@ export function useCancelPortalRequest() {
             return { prevRequests, prevHistory };
         },
         onSuccess: () => {
-            toast.success("Request cancelled successfully!");
             queryClient.invalidateQueries({ queryKey: queryKeys.portal.requests() });
             queryClient.invalidateQueries({ queryKey: queryKeys.portal.history() });
         },
@@ -86,7 +80,6 @@ export function useCancelPortalRequest() {
             if (context?.prevHistory) {
                 queryClient.setQueryData(queryKeys.portal.history(), context.prevHistory);
             }
-            toast.error(err.message || "Failed to cancel request");
         }
     });
 }

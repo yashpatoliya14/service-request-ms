@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
 import { apiClient } from "@/lib/apiClient";
 import { ServiceRequest, DeptPerson } from "@/types";
-import { toast } from "react-hot-toast";
 
 export function useHodRequests() {
     return useQuery({
@@ -46,11 +45,7 @@ export function useAssignTechnician() {
             return res.data;
         },
         onSuccess: () => {
-            toast.success("Technician assigned successfully!");
             queryClient.invalidateQueries({ queryKey: queryKeys.hod.requests() });
-        },
-        onError: (err: any) => {
-            toast.error(err.message || "Failed to assign technician");
         }
     });
 }
@@ -70,11 +65,7 @@ export function useEvaluateRequest() {
             return res.data;
         },
         onSuccess: () => {
-            toast.success("Request evaluated successfully!");
             queryClient.invalidateQueries({ queryKey: queryKeys.hod.requests() });
-        },
-        onError: (err: any) => {
-            toast.error(err.message || "Evaluation failed");
         }
     });
 }

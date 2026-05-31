@@ -146,10 +146,59 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Loading */}
+      {/* Loading Skeleton */}
       {loading && (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-8">
+          {/* Main Stats Skeleton */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="flex items-center gap-4 p-6">
+                  <Skeleton className="h-12 w-12 rounded-xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-6 w-12" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Personnel Skeleton */}
+          <div className="space-y-4">
+            <Skeleton className="h-6 w-48" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="flex items-center gap-4 p-6">
+                    <Skeleton className="h-12 w-12 rounded-xl" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-6 w-12" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Requests by Status Skeleton */}
+          <div className="space-y-4">
+            <Skeleton className="h-6 w-48" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="flex items-center justify-between p-6">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-10 w-10 rounded-lg" />
+                      <Skeleton className="h-5 w-24" />
+                    </div>
+                    <Skeleton className="h-8 w-12" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

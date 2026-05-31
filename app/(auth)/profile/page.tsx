@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "react-hot-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 import { uploadProfilePhoto } from "@/services/upload"
 
 interface UserProfile {
@@ -114,8 +115,58 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading profile...</div>
+      <div className="container mx-auto py-8 px-4 max-w-2xl">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-80" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Profile Picture Section */}
+            <div className="flex items-center space-x-4">
+              <Skeleton className="h-20 w-20 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+
+            {/* Profile Image Upload */}
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+
+            {/* Full Name Input */}
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+
+            {/* Read-only Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+
+            {/* Role Input */}
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end pt-4">
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }

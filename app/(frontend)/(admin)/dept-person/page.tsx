@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/apiClient";
 import { useDepartments } from "@/features/admin/departments";
+import { toast } from "react-hot-toast";
 import { 
   useGetAllDepartmentPersons, 
   useCreateDepartmentPerson, 
@@ -68,18 +69,15 @@ export default function DeptPersonMapping() {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateDepartmentPersonInput>(emptyForm);
-  const [creating, setCreating] = useState(false);
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<DepartmentPerson | null>(null);
   const [editForm, setEditForm] = useState<CreateDepartmentPersonInput>(emptyForm);
-  const [editing, setEditing] = useState(false);
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<DepartmentPerson | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
     // Shared form fields component
     const renderFormFields = (form: CreateDepartmentPersonInput, setForm: (f: CreateDepartmentPersonInput) => void) => (
@@ -154,51 +152,48 @@ export default function DeptPersonMapping() {
   
 
   // Create
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!createForm.FullName.trim() || !createForm.Email.trim() || !createForm.Role || !createForm.ServiceDeptID) return;
-    try {
-      setCreating(true);
-      await createMutation.mutateAsync(createForm);
-      setCreateForm(emptyForm);
-      setCreateOpen(false);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to add personnel");
-    } finally {
-      setCreating(false);
-    }
+    toast.promise(
+      createMutation.mutateAsync(createForm),
+      {
+        loading: "Adding personnel...",
+        success: "Personnel added successfully!",
+        error: (err) => err.message || "Failed to add personnel"
+      }
+    );
+    setCreateForm(emptyForm);
+    setCreateOpen(false);
   };
 
   // Update
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!editItem || !editForm.ServiceDeptID || !editForm.Role) return;
-    try {
-      setEditing(true);
-      await updateMutation.mutateAsync({ ...editForm, DeptPersonID: editItem.DeptPersonID });
-      setEditForm(emptyForm);
-      setEditOpen(false);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to update personnel");
-    } finally {
-      setEditing(false);
-    }
+    toast.promise(
+      updateMutation.mutateAsync({ ...editForm, DeptPersonID: editItem.DeptPersonID }),
+      {
+        loading: "Updating personnel...",
+        success: "Personnel updated successfully!",
+        error: (err) => err.message || "Failed to update personnel"
+      }
+    );
+    setEditForm(emptyForm);
+    setEditOpen(false);
   };
 
   // Delete
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteItem) return;
-    try {
-      setDeleting(true);
-      await deleteMutation.mutateAsync(deleteItem.DeptPersonID);
-      setDeleteItem(null);
-      setDeleteOpen(false);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to delete personnel");
-    } finally {
-      setDeleting(false);
-    }
+    toast.promise(
+      deleteMutation.mutateAsync(deleteItem.DeptPersonID),
+      {
+        loading: "Removing personnel...",
+        success: "Personnel removed successfully!",
+        error: (err) => err.message || "Failed to delete personnel"
+      }
+    );
+    setDeleteItem(null);
+    setDeleteOpen(false);
   };
 
   const openDelete = (item: DepartmentPerson) => {
@@ -302,9 +297,9 @@ export default function DeptPersonMapping() {
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
                 <Button
                   onClick={handleCreate}
-                  disabled={creating || !createForm.FullName.trim() || !createForm.Email.trim() || !createForm.ServiceDeptID}
+                  disabled={createMutation.isPending || !createForm.FullName.trim() || !createForm.Email.trim() || !createForm.ServiceDeptID}
                 >
-                  {creating ? (
+                  {createMutation.isPending ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Adding...</>
                   ) : (
                     "Add Personnel"
@@ -488,8 +483,8 @@ export default function DeptPersonMapping() {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? (
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Removing...</>
               ) : (
                 "Remove"
@@ -541,9 +536,9 @@ export default function DeptPersonMapping() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button
               onClick={handleUpdate}
-              disabled={editing || !editForm.Role || !editForm.ServiceDeptID}
+              disabled={updateMutation.isPending || !editForm.Role || !editForm.ServiceDeptID}
             >
-              {editing ? (
+              {updateMutation.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
               ) : (
                 "Save Changes"

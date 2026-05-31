@@ -46,6 +46,7 @@ import { useUser } from "@/hooks/useUser";
 import { useStatuses } from "@/features/admin/statuses/hooks";
 import { useDepartments } from "@/features/admin/departments/hooks";
 import { useRequestTypes } from "@/features/admin/request-types/hooks";
+import { toast } from "react-hot-toast";
 import { usePortalRequests, useCreatePortalRequest, useCancelPortalRequest } from "@/features/portal/hooks";
 
 import { UserProfile, ServiceRequestType, ServiceRequest, ServiceRequestStatus, Department } from "@/types";
@@ -100,27 +101,38 @@ export default function PortalDashboard() {
   };
 
   // ---- Create new request ----
-  const handleCreateRequest = async () => {
+  const handleCreateRequest = () => {
     if (!validateForm() || !user) return;
-    createRequestMutation.mutate({
-      ServiceRequestTypeID: formData.typeId,
-      RequestorID: user.UserID,
-      Title: formData.subject.trim(),
-      Description: formData.description,
-      ServiceDepartmentID: formData.deptId,
-    }, {
-      onSuccess: () => {
-        setIsModalOpen(false);
-        setFormData({ deptId: "", typeId: "", subject: "", description: ""});
-        setFormErrors({});
+    toast.promise(
+      createRequestMutation.mutateAsync({
+        ServiceRequestTypeID: formData.typeId,
+        RequestorID: user.UserID,
+        Title: formData.subject.trim(),
+        Description: formData.description,
+        ServiceDepartmentID: formData.deptId,
+      }),
+      {
+        loading: "Submitting service request...",
+        success: "Service request submitted successfully!",
+        error: (err) => err.message || "Failed to submit request"
       }
-    });
+    );
+    setIsModalOpen(false);
+    setFormData({ deptId: "", typeId: "", subject: "", description: ""});
+    setFormErrors({});
   };
 
   // ---- Delete / Cancel a request ----
-  const handleDeleteRequest = async (id: string) => {
+  const handleDeleteRequest = (id: string) => {
     if (!confirm("Are you sure you want to cancel this request?")) return;
-    cancelRequestMutation.mutate(id);
+    toast.promise(
+      cancelRequestMutation.mutateAsync(id),
+      {
+        loading: "Cancelling request...",
+        success: "Request cancelled successfully!",
+        error: (err) => err.message || "Failed to cancel request"
+      }
+    );
   };
 
   // ---- Helpers ----

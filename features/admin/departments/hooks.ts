@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
-import { toast } from "react-hot-toast";
 import {
     getDepartments,
     createDepartment,
@@ -24,11 +23,7 @@ export function useCreateDepartment() {
     return useMutation({
         mutationFn: (payload: CreateDepartmentInput) => createDepartment(payload),
         onSuccess: () => {
-            toast.success("Department created successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.department });
-        },
-        onError: (err: any) => {
-            toast.error(err.message || "Failed to create department");
         }
     });
 }
@@ -50,14 +45,12 @@ export function useUpdateDepartment() {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Department updated successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.department });
         },
         onError: (err: any, variables, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(queryKeys.department, context.previous);
             }
-            toast.error(err.message || "Failed to update department");
         }
     });
 }
@@ -79,14 +72,12 @@ export function useDeleteDepartment() {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Department deleted successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.department });
         },
         onError: (err: any, variables, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(queryKeys.department, context.previous);
             }
-            toast.error(err.message || "Failed to delete department");
         }
     });
 }

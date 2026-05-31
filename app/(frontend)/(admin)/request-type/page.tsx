@@ -34,22 +34,12 @@ import {
 } from "@/components/ui/table";
 import { apiClient } from "@/lib/apiClient";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "react-hot-toast";
 import { priorityLabels } from "@/lib/constant";
 import { useDepartments } from "@/features/admin/departments";
 import { useRequestTypes, useRequestTypesCreate, useRequestTypesDelete, useRequestTypesUpdate } from "@/features/admin/request-types/hooks";
 import { RequestTypeCreateSchema, RequestTypeUpdateSchema } from "@/features/admin/request-types/schemas";
 import { useServiceTypes } from "@/features/admin/service-types";
-
-// Types
-interface Department {
-  ServiceDeptID: string;
-  DeptName: string;
-}
-
-interface ServiceType {
-  ServiceTypeID: string;
-  ServiceTypeName: string;
-}
 
 interface RequestType {
   ServiceRequestTypeID: string;
@@ -97,7 +87,6 @@ export default function RequestTypeMaster() {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<RequestTypeCreateSchema>(emptyFormForCreate);
-  const [creating, setCreating] = useState(false);
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
@@ -105,67 +94,53 @@ export default function RequestTypeMaster() {
   const [editForm, setEditForm] = useState<RequestTypeUpdateSchema>(
     emptyFormForUpdate
   );
-  const [editing, setEditing] = useState(false);
 
   // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<RequestType | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   // Create
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!createForm.RequestTypeName.trim() || !createForm.ServiceDeptID || !createForm.ServiceTypeID) return;
-    try {
-      setCreating(true);
-      createRequestTypes.mutateAsync(createForm, {
-        onSuccess: () => {
-          setCreateOpen(false);
-          setCreateForm(emptyFormForCreate);
-        }
-      });
-    } catch (err) {
-      console.error(err);
-      setError("Failed to create request type");
-    } finally {
-      setCreating(false);
-    }
+    toast.promise(
+      createRequestTypes.mutateAsync(createForm),
+      {
+        loading: "Creating request type...",
+        success: "Created request type successfully!",
+        error: (err) => err.message || "Failed to create request type"
+      }
+    );
+    setCreateOpen(false);
+    setCreateForm(emptyFormForCreate);
   };
 
   // Update
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!editItem || !editForm.RequestTypeName.trim() || !editForm.ServiceDeptID || !editForm.ServiceTypeID) return;
-    try {
-      setEditing(true);
-      updateRequestTypes.mutateAsync(editForm, {
-        onSuccess: () => {
-          setEditOpen(false);
-          setEditForm(emptyFormForUpdate);
-        }
-      });
-    } catch (err) {
-      console.error(err);
-      setError("Failed to update request type");
-    } finally {
-      setEditing(false);
-    }
+    toast.promise(
+      updateRequestTypes.mutateAsync(editForm),
+      {
+        loading: "Updating request type...",
+        success: "Updated request type successfully!",
+        error: (err) => err.message || "Failed to update request type"
+      }
+    );
+    setEditOpen(false);
+    setEditForm(emptyFormForUpdate);
   };
 
   // Delete
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteItem) return;
-    try {
-      setDeleting(true);
-      await deleteRequestTypes.mutateAsync(deleteItem, {
-        onSuccess: () => {
-          setDeleteOpen(false);
-        }
-      });
-    } catch (err) {
-      console.error(err);
-      setError("Failed to delete request type");
-    } finally {
-      setDeleting(false);
-    }
+    toast.promise(
+      deleteRequestTypes.mutateAsync(deleteItem),
+      {
+        loading: "Deleting request type...",
+        success: "Deleted request type successfully!",
+        error: (err) => err.message || "Failed to delete request type"
+      }
+    );
+    setDeleteOpen(false);
   };
 
   const openEdit = (item: RequestType) => {
@@ -298,9 +273,9 @@ export default function RequestTypeMaster() {
               <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
               <Button
                 onClick={handleCreate}
-                disabled={creating || !createForm.RequestTypeName.trim() || !createForm.ServiceDeptID || !createForm.ServiceTypeID}
+                disabled={createRequestTypes.isPending || !createForm.RequestTypeName.trim() || !createForm.ServiceDeptID || !createForm.ServiceTypeID}
               >
-                {creating ? (
+                {createRequestTypes.isPending ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</>
                 ) : (
                   "Create Request Type"
@@ -397,8 +372,8 @@ export default function RequestTypeMaster() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requestTypes?.map((item, index) => (
-                  <TableRow key={item.ServiceRequestTypeID} className="group">
+                {requestTypes && requestTypes?.map((item, index) => (
+                  <TableRow key={item?.ServiceRequestTypeID} className="group">
                     <TableCell className="text-muted-foreground">{index + 1}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -488,9 +463,9 @@ export default function RequestTypeMaster() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
             <Button
               onClick={handleUpdate}
-              disabled={editing || !editForm.RequestTypeName.trim() || !editForm.ServiceDeptID || !editForm.ServiceTypeID}
+              disabled={updateRequestTypes.isPending || !editForm.RequestTypeName.trim() || !editForm.ServiceDeptID || !editForm.ServiceTypeID}
             >
-              {editing ? (
+              {updateRequestTypes.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
               ) : (
                 "Save Changes"
@@ -511,8 +486,8 @@ export default function RequestTypeMaster() {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? (
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteRequestTypes.isPending}>
+              {deleteRequestTypes.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Deleting...</>
               ) : (
                 "Delete"

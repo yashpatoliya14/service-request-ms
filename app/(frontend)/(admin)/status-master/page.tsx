@@ -31,6 +31,7 @@ import {
   useDeleteStatus, 
   StatusItem 
 } from "@/features/admin/statuses";
+import { toast } from "react-hot-toast";
 
 const COLOR_OPTIONS = [
   { value: "bg-amber-500", badge: "bg-amber-100 text-amber-700" },
@@ -77,10 +78,10 @@ export default function StatusMaster() {
   }, [queryError]);
 
   // ---- Create status ----
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!formData.ServiceRequestStatusName.trim()) return;
-    try {
-      await createStatusMutation.mutateAsync({
+    toast.promise(
+      createStatusMutation.mutateAsync({
         ServiceRequestStatusName: formData.ServiceRequestStatusName,
         Sequence: formData.Sequence ? Number(formData.Sequence) : null,
         Description: formData.Description || null,
@@ -89,12 +90,15 @@ export default function StatusMaster() {
         IsDefault: formData.IsDefault,
         IsAssigned: formData.IsAssigned,
         IsTerminal: formData.IsTerminal,
-      });
-      setIsCreateOpen(false);
-      setFormData(DEFAULT_FORM);
-    } catch (err) {
-      console.error("Failed to create status:", err);
-    }
+      }),
+      {
+        loading: "Creating status...",
+        success: "Status created successfully!",
+        error: (err) => err.message || "Failed to create status"
+      }
+    );
+    setIsCreateOpen(false);
+    setFormData(DEFAULT_FORM);
   };
 
   // ---- Open edit modal ----
@@ -114,10 +118,10 @@ export default function StatusMaster() {
   };
 
   // ---- Update status ----
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!editingStatus || !formData.ServiceRequestStatusName.trim()) return;
-    try {
-      await updateStatusMutation.mutateAsync({
+    toast.promise(
+      updateStatusMutation.mutateAsync({
         ServiceRequestStatusID: editingStatus.ServiceRequestStatusID,
         ServiceRequestStatusName: formData.ServiceRequestStatusName,
         Sequence: formData.Sequence ? Number(formData.Sequence) : null,
@@ -127,23 +131,29 @@ export default function StatusMaster() {
         IsDefault: formData.IsDefault,
         IsAssigned: formData.IsAssigned,
         IsTerminal: formData.IsTerminal,
-      });
-      setIsEditOpen(false);
-      setEditingStatus(null);
-      setFormData(DEFAULT_FORM);
-    } catch (err) {
-      console.error("Failed to update status:", err);
-    }
+      }),
+      {
+        loading: "Updating status...",
+        success: "Status updated successfully!",
+        error: (err) => err.message || "Failed to update status"
+      }
+    );
+    setIsEditOpen(false);
+    setEditingStatus(null);
+    setFormData(DEFAULT_FORM);
   };
 
   // ---- Delete status ----
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     if (!confirm("Are you sure you want to delete this status?")) return;
-    try {
-      await deleteStatusMutation.mutateAsync(id);
-    } catch (err) {
-      console.error("Failed to delete status:", err);
-    }
+    toast.promise(
+      deleteStatusMutation.mutateAsync(id),
+      {
+        loading: "Deleting status...",
+        success: "Status deleted successfully!",
+        error: (err) => err.message || "Failed to delete status"
+      }
+    );
   };
 
   // ---- Helpers ----

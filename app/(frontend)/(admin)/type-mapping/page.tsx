@@ -40,6 +40,7 @@ import {
   useGetTechnician
 } from "@/features/admin/person-mappings";
 import { useRequestTypes } from "@/features/admin/request-types/hooks";
+import { toast } from "react-hot-toast";
 import { DepartmentPerson, useGetAllDepartmentPersons } from "@/features/admin/department-persons";
 
 interface IPersonMapping {
@@ -107,48 +108,58 @@ export default function AutoAssignmentMaster() {
   const isUpdating = updateMappingMutation.isPending ? updateMappingMutation.variables?.ServiceRequestTypeID || "" : null;
   const isDeleting = deleteMappingMutation.isPending ? deleteMappingMutation.variables : null;
 
-  const handleCreateMapping = async (serviceRequestTypeID:string,servicePersonID:string) => {
+  const handleCreateMapping = (serviceRequestTypeID:string,servicePersonID:string) => {
     setCreateError("");
-    try {
-      await createMappingMutation.mutateAsync({
+    toast.promise(
+      createMappingMutation.mutateAsync({
         ServiceRequestTypeID: serviceRequestTypeID,
         DeptPersonID: servicePersonID,
-      });
-      setIsModalOpen(false);
-      setServiceRequestTypeID("");
-      setServicePersonID("");
-      setCreateError("");
-    } catch (e: any) {
-      console.error(e);
-      setCreateError(e.message || "An error occurred while creating mapping");
-    }
+      }),
+      {
+        loading: "Linking auto-assignment...",
+        success: "Auto-assignment linked successfully!",
+        error: (err) => {
+          setCreateError(err.message || "An error occurred while creating mapping");
+          return err.message || "Failed to link auto-assignment";
+        }
+      }
+    );
+    setIsModalOpen(false);
+    setServiceRequestTypeID("");
+    setServicePersonID("");
   };
 
-  const handleUpdateMapping = async () => {
+  const handleUpdateMapping = () => {
     if (!editItem) return;
-    try {
-      await updateMappingMutation.mutateAsync({
+    toast.promise(
+      updateMappingMutation.mutateAsync({
         ServiceRequestTypeID: editItem.ServiceRequestTypeID,
         ServicePersonID: editServicePersonID,
-      });
-      setIsEditModalOpen(false);
-    } catch (e) {
-      console.error(e);
-    }
+      }),
+      {
+        loading: "Updating auto-assignment...",
+        success: "Auto-assignment updated successfully!",
+        error: (err) => err.message || "Failed to update auto-assignment"
+      }
+    );
+    setIsEditModalOpen(false);
   };
 
   const openEditModal = (item: IPersonMapping) => {
     setEditItem(item);
-    setEditServicePersonID(item.ServicePersonID ? item.ServicePersonID.toString() : "");
+    setEditServicePersonID(item.ServicePersonID ? item.ServicePersonID?.toString() : "");
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteMapping = async (id:string) => {
-    try {
-      await deleteMappingMutation.mutateAsync(id);
-    } catch (e) {
-      console.error(e);
-    }
+  const handleDeleteMapping = (id:string) => {
+    toast.promise(
+      deleteMappingMutation.mutateAsync(id),
+      {
+        loading: "Unlinking auto-assignment...",
+        success: "Auto-assignment unlinked successfully!",
+        error: (err) => err.message || "Failed to unlink auto-assignment"
+      }
+    );
   };
 
   const filteredMappings = personMappingList.filter((item:any) => {
@@ -205,7 +216,7 @@ export default function AutoAssignmentMaster() {
                   </SelectTrigger>
                   <SelectContent>
                     {serviceRequestType.map((item:any) => (
-                      <SelectItem key={item.ServiceRequestTypeID} value={item.ServiceRequestTypeID.toString()}>
+                      <SelectItem key={item.ServiceRequestTypeID} value={item?.ServiceRequestTypeID?.toString()}>
                         {item.RequestTypeName}
                       </SelectItem>
                     ))}
@@ -220,7 +231,7 @@ export default function AutoAssignmentMaster() {
                   </SelectTrigger>
                   <SelectContent>
                     {servicePerson.map((item:DepartmentPerson) => (
-                      <SelectItem key={item.DeptPersonID} value={item.DeptPersonID.toString()}>
+                      <SelectItem key={item.DeptPersonID} value={item.DeptPersonID?.toString()}>
                         {item?.Users?.FullName ?? ""} ({item?.ServiceDepartment?.DeptName ?? ""})
                       </SelectItem>
                     ))}
@@ -389,7 +400,7 @@ export default function AutoAssignmentMaster() {
                 </SelectTrigger>
                 <SelectContent>
                   {servicePerson.map((item:any) => (
-                    <SelectItem key={item.DeptPersonID} value={item.DeptPersonID.toString()}>
+                    <SelectItem key={item.DeptPersonID} value={item.DeptPersonID?.toString()}>
                       {item.Users.FullName} ({item.ServiceDepartment.DeptName})
                     </SelectItem>
                   ))}

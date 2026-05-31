@@ -23,6 +23,7 @@ import {
 import { getStatusBadge } from "@/lib/statusServices";
 import { useUser } from "@/hooks/useUser";
 import { useStatuses } from "@/features/admin/statuses/hooks";
+import { toast } from "react-hot-toast";
 import { useTechnicianRequests, useUpdateTechnicianRequestStatus } from "@/features/technician/hooks";
 
 // ---- Types ----
@@ -70,8 +71,15 @@ export default function TechnicianDashboard() {
   const loading = userLoading || statusesLoading || requestsLoading;
 
   // ---- Update request status ----
-  const handleUpdateStatus = async (requestId: string, newStatusId: string) => {
-    updateStatusMutation.mutate({ requestId, newStatusId });
+  const handleUpdateStatus = (requestId: string, newStatusId: string) => {
+    toast.promise(
+      updateStatusMutation.mutateAsync({ requestId, newStatusId }),
+      {
+        loading: "Updating status...",
+        success: "Status updated successfully!",
+        error: (err) => err.message || "Failed to update status"
+      }
+    );
   };
 
   // ---- Helpers ----

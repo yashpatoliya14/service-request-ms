@@ -26,6 +26,7 @@ import { getStatusLabel, getStatusBadge } from "@/lib/statusServices";
 import { ServiceRequest, ServiceRequestStatus, Department } from "@/types";
 import { useStatuses } from "@/features/admin/statuses/hooks";
 import { useDepartments } from "@/features/admin/departments/hooks";
+import { toast } from "react-hot-toast";
 import { usePortalHistory, useCancelPortalRequest } from "@/features/portal/hooks";
 
 export default function UserRequestPortal() {
@@ -44,9 +45,16 @@ export default function UserRequestPortal() {
   const [deptFilter, setDeptFilter] = useState("all");
 
   // ---- Cancel / Delete a request ----
-  const handleCancelRequest = async (id: string) => {
+  const handleCancelRequest = (id: string) => {
     if (!confirm("Are you sure you want to cancel this request?")) return;
-    cancelRequestMutation.mutate(id);
+    toast.promise(
+      cancelRequestMutation.mutateAsync(id),
+      {
+        loading: "Cancelling request...",
+        success: "Request cancelled successfully!",
+        error: (err) => err.message || "Failed to cancel request"
+      }
+    );
   };
 
   // ---- Filter Logic ----

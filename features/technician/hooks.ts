@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
 import { apiClient } from "@/lib/apiClient";
 import { ServiceRequest } from "@/types";
-import { toast } from "react-hot-toast";
 
 export function useTechnicianRequests(userId: string | undefined) {
     return useQuery({
@@ -71,7 +70,6 @@ export function useUpdateTechnicianRequestStatus(userId: string | undefined) {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Status updated successfully");
             if (userId) {
                 queryClient.invalidateQueries({ queryKey: queryKeys.technician.requests(userId) });
             }
@@ -80,7 +78,6 @@ export function useUpdateTechnicianRequestStatus(userId: string | undefined) {
             if (userId && context?.previous) {
                 queryClient.setQueryData(queryKeys.technician.requests(userId), context.previous);
             }
-            toast.error(err.message || "Failed to update status");
         }
     });
 }

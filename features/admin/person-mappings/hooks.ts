@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
-import { toast } from "react-hot-toast";
 import {
     getPersonMappings,
     createPersonMapping,
@@ -33,11 +32,7 @@ export function useCreatePersonMapping() {
     return useMutation({
         mutationFn: (payload: CreateMappingInput) => createPersonMapping(payload),
         onSuccess: () => {
-            toast.success("Auto-assignment linked successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.personMappings });
-        },
-        onError: (err: any) => {
-            toast.error(err.message || "Failed to link auto-assignment");
         }
     });
 }
@@ -52,14 +47,12 @@ export function useUpdatePersonMapping() {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Auto-assignment updated successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.personMappings });
         },
         onError: (err: any, variables, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(queryKeys.personMappings, context.previous);
             }
-            toast.error(err.message || "Failed to update auto-assignment");
         }
     });
 }
@@ -80,14 +73,12 @@ export function useDeletePersonMapping() {
             return { previous };
         },
         onSuccess: () => {
-            toast.success("Auto-assignment unlinked successfully");
             queryClient.invalidateQueries({ queryKey: queryKeys.personMappings });
         },
         onError: (err: any, variables, context) => {
             if (context?.previous) {
                 queryClient.setQueryData(queryKeys.personMappings, context.previous);
             }
-            toast.error(err.message || "Failed to unlink auto-assignment");
         }
     });
 }
