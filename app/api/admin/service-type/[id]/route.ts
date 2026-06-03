@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
 
 // get service type by id 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -31,6 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const { id } = await params;
         const body = await req.json();
         const { ServiceTypeName } = body;
+        await redis.del(redisKeys.serviceTypes.key);
         //update the Person Master Data
         const serviceType = await prisma.serviceType.update({
             data: {
@@ -55,7 +58,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     try {
         const { id } = await params;
-
+        await redis.del(redisKeys.serviceTypes.key);
         //delete the service type Data
         const serviceType = await prisma.serviceType.delete({
             where: {

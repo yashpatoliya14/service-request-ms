@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
+import { invalidateRequestCache } from "@/lib/redis-helpers";
 
 
 // update a status
@@ -10,6 +13,7 @@ export async function PATCH(req: NextRequest) {
         const body = await req.json();
         const { ServiceRequestTypeID, StatusID } = body;
 
+        await invalidateRequestCache(ServiceRequestTypeID);
 
         const requestor = await prisma.serviceRequest.update({
             where: {
@@ -22,6 +26,7 @@ export async function PATCH(req: NextRequest) {
         console.log(requestor);
 
         if (requestor) {
+            await invalidateRequestCache(ServiceRequestTypeID);
             return NextResponse.json({ success: true, message: "Requestor Created Successfull", data: [requestor] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Requestor Creation Failed", data: [] }, { status: 400 });
@@ -38,6 +43,18 @@ export async function PATCH(req: NextRequest) {
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
+
+        const cacheKey = `${redisKeys.technicianRequests.key}:${id}`;
+        const redisData = await redis.get(cacheKey);
+        if (redisData) {
+            const parsed = JSON.parse(redisData);
+            console.log("from cached");
+            return NextResponse.json(
+                { success: true, message: "Get Technician Requests Successful", data: parsed ? parsed : [] } as ApiResponse,
+                { status: 200 }
+            );
+        }
+
         // get from dept person
         const deptPerson = await prisma.serviceDeptPerson.findUnique({
             where: {
@@ -70,6 +87,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         });
 
         if (requests) {
+            await redis.set(cacheKey, JSON.stringify([requests]), { 'PX': redisKeys.technicianRequests.ttl });
             return NextResponse.json(
                 { success: true, message: "Get Technician Requests Successful", data: [requests] } as ApiResponse,
                 { status: 200 }
@@ -104,6 +122,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             );
         }
 
+        await invalidateRequestCache(id);
+
         // Update the request status
         const updatedRequest = await prisma.serviceRequest.update({
             where: {
@@ -115,6 +135,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         });
 
         if (updatedRequest) {
+            await invalidateRequestCache(id);
             return NextResponse.json(
                 { success: true, message: "Request Status Updated Successfully", data: [updatedRequest] } as ApiResponse,
                 { status: 200 }

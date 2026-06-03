@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
 
 // Update Person mapping
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -7,6 +9,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const { id } = await params;
         const body = await req.json();
         const { ServiceRequestTypeID, ServicePersonID } = body;
+
+        await redis.del(redisKeys.personMappings.key);
 
         // Find the record using ServiceRequestTypeID (since frontend uses it as id)
         const existingRecord = await prisma.serviceRequestTypeWisePerson.findFirst({
@@ -45,6 +49,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
+
+        await redis.del(redisKeys.personMappings.key);
 
         // Find the record using ServiceRequestTypeID (since frontend uses it as id)
         const existingRecord = await prisma.serviceRequestTypeWisePerson.findFirst({

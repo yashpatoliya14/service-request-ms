@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
+import { invalidateRequestCache } from "@/lib/redis-helpers";
 
 
 // Create Requestor  
@@ -67,6 +70,7 @@ export async function POST(req: NextRequest) {
             }
         })
         if (requestor) {
+            await invalidateRequestCache(requestor.ServiceRequestID);
             const statusName = assignedToID && assignedStatus
                 ? assignedStatus.ServiceRequestStatusName
                 : defaultStatus?.ServiceRequestStatusName || 'Unknown';
@@ -97,10 +101,18 @@ export async function POST(req: NextRequest) {
 // get all requestors
 export async function GET(req: NextRequest) {
     try {
+        const cacheKey = `${redisKeys.requestorHistory.key}:all`;
+        const redisData = await redis.get(cacheKey);
+        if (redisData) {
+            const parsed = JSON.parse(redisData);
+            console.log("from cached");
+            return NextResponse.json({ success: true, message: "Get All Requestors Successfull", data: parsed ? parsed : [] } as ApiResponse, { status: 200 });
+        }
 
         //get the requestors Data
         const requestors = await prisma.serviceRequest.findMany()
         if (requestors) {
+            await redis.set(cacheKey, JSON.stringify(requestors), { 'PX': redisKeys.requestorHistory.ttl });
             return NextResponse.json({ success: true, message: "Get All Requestors Successfull", data: requestors ? requestors : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Requestors Failed", data: [] }, { status: 400 });

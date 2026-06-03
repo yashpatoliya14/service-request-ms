@@ -2,6 +2,9 @@ import { getDetailsFromToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
+import { invalidateRequestCache } from "@/lib/redis-helpers";
 
 
 // Create assignment  
@@ -29,6 +32,8 @@ export async function POST(req: NextRequest) {
             where: { IsAssigned: true }
         });
 
+        await invalidateRequestCache(ServiceRequestID);
+
         //create a assignment
         const assignment = await prisma.serviceRequest.update({
             data:{
@@ -43,6 +48,7 @@ export async function POST(req: NextRequest) {
             }
         })
         if (assignment) {
+            await invalidateRequestCache(ServiceRequestID);
             return NextResponse.json({ success: true, message: "Assignment Created Successfull", data: [assignment] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Assignment Creation Failed", data: [] }, { status: 400 });
@@ -80,6 +86,15 @@ export async function GET(req: NextRequest) {
         if(!findPersonnel){
             return NextResponse.json({ success: false, message: "Unauthorized", data: [] }, { status: 401 });
         }
+
+        const cacheKey = `${redisKeys.hodRequests.key}:${findPersonnel.ServiceDepartment?.ServiceDeptID}`;
+        const redisData = await redis.get(cacheKey);
+        if (redisData) {
+            const parsed = JSON.parse(redisData);
+            console.log("from cached");
+            return NextResponse.json({ success: true, message: "Get All Requests Successfull", data: parsed ? parsed : [] } as ApiResponse, { status: 200 });
+        }
+
         const requests = await prisma.serviceRequest.findMany({
             where: {
                 ServiceDepartmentID:findPersonnel.ServiceDepartment?.ServiceDeptID,
@@ -92,6 +107,7 @@ export async function GET(req: NextRequest) {
             },
         });
         if (requests) {
+            await redis.set(cacheKey, JSON.stringify([requests]), { 'PX': redisKeys.hodRequests.ttl });
             return NextResponse.json({ success: true, message: "Get All Requests Successfull", data: [requests] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Requests Failed", data: [] }, { status: 400 });

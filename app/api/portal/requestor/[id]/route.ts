@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { invalidateRequestCache } from "@/lib/redis-helpers";
 
 // get requestor by id 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -40,6 +41,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const { id } = await params;
         const body = await req.json();
         const { ServiceRequestTypeID, RequestorID, Title, Description, Priority } = body;
+        
+        await invalidateRequestCache(id);
+
         //update the requestor Data
         const requestor = await prisma.serviceRequest.update({
             data: {
@@ -54,6 +58,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             }
         })
         if (requestor) {
+            await invalidateRequestCache(id);
             return NextResponse.json({ success: true, message: "Update Requestor Successfull", data: requestor ? [requestor] : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Update Requestor Failed", data: [] }, { status: 400 });
@@ -68,6 +73,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     try {
         const { id } = await params;
+
+        await invalidateRequestCache(id);
 
         // First delete related chat messages
         await prisma.serviceRequestReply.deleteMany({

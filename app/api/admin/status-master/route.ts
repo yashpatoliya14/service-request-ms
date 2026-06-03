@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
 
 // POST - Create a new status
 export async function POST(req: NextRequest) {
@@ -16,6 +18,8 @@ export async function POST(req: NextRequest) {
             IsAssigned,
             IsTerminal,
         } = body;
+
+        await redis.del(redisKeys.statusMaster.key);
 
         // Get next available ID
         const maxId = await prisma.serviceRequestStatus.aggregate({
@@ -54,14 +58,26 @@ export async function POST(req: NextRequest) {
 // GET - Get all statuses
 export async function GET() {
     try {
+        const redisData = await redis.get(redisKeys.statusMaster.key);
+        if (redisData) {
+            const parsed = JSON.parse(redisData);
+            console.log("from cached");
+            return NextResponse.json({ success: true, message: "Get All Statuses Successful", data: parsed ? parsed : [] } as ApiResponse, { status: 200 });
+        }
+
         const statuses = await prisma.serviceRequestStatus.findMany({
             orderBy: { Sequence: "asc" },
         });
 
-        return NextResponse.json(
-            { success: true, message: "Get All Statuses Successful", data: statuses || [] } as ApiResponse,
-            { status: 200 }
-        );
+        if (statuses) {
+            await redis.set(redisKeys.statusMaster.key, JSON.stringify(statuses), { 'PX': redisKeys.statusMaster.ttl });
+            return NextResponse.json(
+                { success: true, message: "Get All Statuses Successful", data: statuses || [] } as ApiResponse,
+                { status: 200 }
+            );
+        } else {
+            return NextResponse.json({ success: false, message: "Get All Statuses Failed", data: [] }, { status: 400 });
+        }
     } catch (e) {
         console.log(`Error in getting all statuses: ${e}`);
         return NextResponse.json({ success: false, message: "Get All Statuses Failed", data: [] }, { status: 500 });

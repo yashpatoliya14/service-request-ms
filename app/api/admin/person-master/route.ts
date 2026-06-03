@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
 
 
 // Create Person Master  
@@ -35,6 +37,16 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        const roles = ["admin", "hod", "technician", "user"];
+        await Promise.all([
+            redis.del(redisKeys.personMaster.key),
+            ...roles.map(r => redis.del(`${redisKeys.personMaster.key}:${r}`))
+        ]);
+
+        if (ServiceDeptID) {
+            await redis.del(`hodTechnicians:${ServiceDeptID}`);
+        }
+
         //create a person master
         const personMaster = await prisma.serviceDeptPerson.create({
             data: {
@@ -60,6 +72,14 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
     try {
         const role = req.nextUrl.searchParams.get("role");
+        const cacheKey = role ? `${redisKeys.personMaster.key}:${role}` : redisKeys.personMaster.key;
+
+        const redisData = await redis.get(cacheKey);
+        if (redisData) {
+            const parsed = JSON.parse(redisData);
+            console.log("from cached");
+            return NextResponse.json({ success: true, message: "Get All Person Masters Successfull", data: parsed ? parsed : [] } as ApiResponse, { status: 200 });
+        }
 
         //get the Persons Master Data
         const users = await prisma.serviceDeptPerson.findMany({
@@ -80,6 +100,7 @@ export async function GET(req: NextRequest) {
         console.log(users);
         
         if (users) {
+            await redis.set(cacheKey, JSON.stringify(users), { 'PX': redisKeys.personMaster.ttl });
             return NextResponse.json({ success: true, message: "Get All Person Masters Successfull", data: users ? users : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Person Master Failed", data: [] }, { status: 400 });

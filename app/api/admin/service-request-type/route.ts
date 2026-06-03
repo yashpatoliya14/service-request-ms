@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         })
 
         if (serviceRequestTypes) {
-        await redis.set(redisKeys.requestTypes.key,JSON.stringify(serviceRequestTypes),{'EX':redisKeys.requestTypes.ttl})
+        await redis.set(redisKeys.requestTypes.key,JSON.stringify(serviceRequestTypes),{'PX':redisKeys.requestTypes.ttl})
         
             return NextResponse.json({ success: true, message: "Get All Service Request Types Successfull", data: serviceRequestTypes ? serviceRequestTypes : [] } as ApiResponse, { status: 200 });
         } else {

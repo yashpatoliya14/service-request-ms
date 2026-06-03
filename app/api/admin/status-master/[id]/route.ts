@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
 
 // GET - Get status by ID
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -41,6 +43,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             IsTerminal,
         } = body;
 
+        await redis.del(redisKeys.statusMaster.key);
+
         const status = await prisma.serviceRequestStatus.update({
             where: { ServiceRequestStatusID: parseInt(id) },
             data: {
@@ -74,6 +78,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
+
+        await redis.del(redisKeys.statusMaster.key);
 
         const status = await prisma.serviceRequestStatus.delete({
             where: { ServiceRequestStatusID: parseInt(id) },

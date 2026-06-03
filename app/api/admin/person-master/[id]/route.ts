@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
 
 // get Person master by id 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -37,7 +39,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         const body = await req.json();
         const { ServiceDeptID, Role } = body;
         
+        const roles = ["admin", "hod", "technician", "user"];
+        await Promise.all([
+            redis.del(redisKeys.personMaster.key),
+            ...roles.map(r => redis.del(`${redisKeys.personMaster.key}:${r}`))
+        ]);
         
+        const oldPerson = await prisma.serviceDeptPerson.findUnique({
+            where: { DeptPersonID: BigInt(id) }
+        });
+        if (oldPerson?.ServiceDeptID) {
+            await redis.del(`hodTechnicians:${oldPerson.ServiceDeptID}`);
+        }
+        if (ServiceDeptID) {
+            await redis.del(`hodTechnicians:${ServiceDeptID}`);
+        }
+
         //update the Person Master Data
         const user = await prisma.serviceDeptPerson.update({
             data: {
@@ -75,6 +92,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     try {
         const { id } = await params;
 
+        const roles = ["admin", "hod", "technician", "user"];
+        await Promise.all([
+            redis.del(redisKeys.personMaster.key),
+            ...roles.map(r => redis.del(`${redisKeys.personMaster.key}:${r}`))
+        ]);
+        
+        const oldPerson = await prisma.serviceDeptPerson.findUnique({
+            where: { DeptPersonID: BigInt(id) }
+        });
+        if (oldPerson?.ServiceDeptID) {
+            await redis.del(`hodTechnicians:${oldPerson.ServiceDeptID}`);
+        }
         
         //delete the Person Master Data
         const user = await prisma.serviceDeptPerson.delete({

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { ApiResponse } from "@/types";
+import { redis } from "@/lib/redis";
+import { redisKeys } from "@/lib/redis-keys";
 
 
 // Create Person mapping  
@@ -23,6 +25,8 @@ export async function POST(req: NextRequest) {
                 { status: 400 }
             );
         }
+
+        await redis.del(redisKeys.personMappings.key);
 
         //create
         const personMapping = await prisma.serviceRequestTypeWisePerson.create({
@@ -47,6 +51,12 @@ export async function POST(req: NextRequest) {
 // get all Person mapping
 export async function GET(req: NextRequest) {
     try {
+        const redisData = await redis.get(redisKeys.personMappings.key);
+        if (redisData) {
+            const parsed = JSON.parse(redisData);
+            console.log("from cached");
+            return NextResponse.json({ success: true, message: "Get All Person Mapping Successfull", data: parsed ? parsed : [] } as ApiResponse, { status: 200 });
+        }
 
         //get the Person mapping Data
         const personMapping = await prisma.serviceRequestTypeWisePerson.findMany({
@@ -81,6 +91,7 @@ export async function GET(req: NextRequest) {
         });
 
         if (personMapping) {
+            await redis.set(redisKeys.personMappings.key, JSON.stringify(personMapping), { 'PX': redisKeys.personMappings.ttl });
             return NextResponse.json({ success: true, message: "Get All Person Mapping Successfull", data: personMapping ? personMapping : [] } as ApiResponse, { status: 200 });
         } else {
             return NextResponse.json({ success: false, message: "Get All Person Mapping Failed", data: [] }, { status: 400 });
