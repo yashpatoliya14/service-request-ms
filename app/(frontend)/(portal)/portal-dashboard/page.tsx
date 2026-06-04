@@ -53,7 +53,24 @@ import { UserProfile, ServiceRequestType, ServiceRequest, ServiceRequestStatus, 
 
 export default function PortalDashboard() {
   const { data: user, isLoading: userLoading } = useUser();
-  const { data: requests = [], isLoading: requestsLoading } = usePortalRequests();
+
+  // ---- State ----
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [deptFilter, setDeptFilter] = useState("ALL");
+
+  const {
+    data: requestsData,
+    isLoading: requestsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePortalRequests({ search: searchQuery, status: statusFilter, dept: deptFilter });
+
+  const requests = requestsData?.pages.flatMap((page) => page.requests) ?? [];
+  const serverStats = requestsData?.pages[0]?.stats || { total: 0, pending: 0, active: 0, closed: 0 };
+
   const { data: statusesData = [], isLoading: statusesLoading } = useStatuses();
   const { data: departments = [], isLoading: departmentsLoading } = useDepartments();
   const { data: requestTypes = [], isLoading: requestTypesLoading } = useRequestTypes();
@@ -66,12 +83,6 @@ export default function PortalDashboard() {
   const cancelRequestMutation = useCancelPortalRequest();
 
   const submitting = createRequestMutation.isPending;
-
-  // ---- State ----
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [deptFilter, setDeptFilter] = useState("ALL");
 
   const [formData, setFormData] = useState({
     deptId: "",
@@ -140,32 +151,13 @@ export default function PortalDashboard() {
     (t) => String(t.ServiceDeptID) === formData.deptId && t.IsActive
   );
 
-  const filteredRequests = requests.filter((r) => {
-    const q = searchQuery.toLowerCase();
-    const matchSearch = !searchQuery || (
-      r.Title?.toLowerCase().includes(q) ||
-      String(r.ServiceRequestID).includes(q)
-    );
-
-    const matchStatus = statusFilter === "ALL" || String(r.StatusID) === statusFilter;
-
-    const reqDeptName = r.ServiceRequestType?.ServiceDepartment?.DeptName;
-    const matchDept = deptFilter === "ALL" || reqDeptName === deptFilter;
-
-    return matchSearch && matchStatus && matchDept;
-  });
-
-
-
-  const defaultCount = requests.filter((r) => r.ServiceRequestStatus?.IsDefault === true || (!r.ServiceRequestStatus && !r.StatusID)).length;
-  const terminalCount = requests.filter((r) => r.ServiceRequestStatus?.IsTerminal === true).length;
-  const activeCount = requests.length - defaultCount - terminalCount;
+  const filteredRequests = requests;
 
   const stats = [
-    { label: "Total", count: requests.length, variant: "default" as const },
-    { label: "Pending", count: defaultCount, variant: "warning" as const },
-    { label: "Active", count: activeCount, variant: "info" as const },
-    { label: "Closed", count: terminalCount, variant: "success" as const },
+    { label: "Total", count: serverStats.total, variant: "default" as const },
+    { label: "Pending", count: serverStats.pending, variant: "warning" as const },
+    { label: "Active", count: serverStats.active, variant: "info" as const },
+    { label: "Closed", count: serverStats.closed, variant: "success" as const },
   ];
 
   return (
@@ -433,6 +425,26 @@ export default function PortalDashboard() {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {hasNextPage && (
+            <div className="flex justify-center p-4 border-t bg-muted/20">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="w-full max-w-xs gap-2 transition-all duration-300 hover:bg-primary hover:text-primary-foreground shadow-sm"
+              >
+                {isFetchingNextPage ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading next batch...
+                  </>
+                ) : (
+                  "Load More Requests"
+                )}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>

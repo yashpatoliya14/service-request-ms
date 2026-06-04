@@ -64,6 +64,47 @@ const ROLE_DASHBOARD: Record<string, string> = {
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const isApiRequest = pathname.startsWith("/api/");
+
+    // 1. Rate Limiting check (bypassed for the rate limiter endpoint itself and static next asset files)
+    if (pathname !== "/api/ratelimit" && !pathname.startsWith("/_next/")) {
+        try {
+            const ip = (request as any).ip || request.headers.get("x-forwarded-for") || "127.0.0.1";
+            
+            // Perform loopback HTTP request to the rate limit API route running in Node.js runtime
+            const rateLimitRes = await fetch(new URL("/api/ratelimit", request.url), {
+                headers: {
+                    "x-client-ip": ip,
+                    "x-request-path": pathname,
+                },
+            });
+
+            if (rateLimitRes.ok) {
+                const limitData = await rateLimitRes.json();
+                if (limitData.success && !limitData.allowed) {
+                    // Block access with HTTP 429 Too Many Requests
+                    return NextResponse.json(
+                        {
+                            success: false,
+                            message: `Too many requests. Please try again in ${limitData.reset} seconds.`,
+                            data: [],
+                        },
+                        {
+                            status: 429,
+                            headers: {
+                                "X-RateLimit-Limit": String(limitData.limit),
+                                "X-RateLimit-Remaining": String(limitData.remaining),
+                                "X-RateLimit-Reset": String(limitData.reset),
+                            },
+                        }
+                    );
+                }
+            }
+        } catch (err) {
+            console.error("Rate limit check failed (Edge proxy loopback):", err);
+            // Fail open: don't crash the server if rate limiter has issues
+        }
+    }
+
     const token = request.cookies.get("auth_token")?.value;
 
     // Helper to return consistent error responses
@@ -127,4 +168,3 @@ export async function proxy(request: NextRequest) {
 export const config = {
     matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
-

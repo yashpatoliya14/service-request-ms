@@ -1,18 +1,29 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-key";
 import { apiClient } from "@/lib/apiClient";
 import { ServiceRequest } from "@/types";
 
-export function usePortalRequests() {
-    return useQuery({
-        queryKey: queryKeys.portal.requests(),
-        queryFn: async (): Promise<ServiceRequest[]> => {
-            const res = await apiClient.get<ServiceRequest[][]>("/api/portal/requests");
+export function usePortalRequests(filters: { search?: string; status?: string; dept?: string } = {}) {
+    return useInfiniteQuery({
+        queryKey: [...queryKeys.portal.requests(), filters],
+        queryFn: async ({ pageParam = null }): Promise<{ requests: ServiceRequest[]; nextCursor: string | null; hasNextPage: boolean; stats: any }> => {
+            const params = new URLSearchParams();
+            if (pageParam) params.append("cursor", String(pageParam));
+            if (filters.search) params.append("search", filters.search);
+            if (filters.status) params.append("status", filters.status);
+            if (filters.dept) params.append("dept", filters.dept);
+            params.append("limit", "5");
+
+            const res = await apiClient.get<{ requests: ServiceRequest[]; nextCursor: string | null; hasNextPage: boolean; stats: any }[]>(
+                `/api/portal/requests?${params.toString()}`
+            );
             if (res.success && res.data?.[0]) {
                 return res.data[0];
             }
-            return [];
+            return { requests: [], nextCursor: null, hasNextPage: false, stats: { total: 0, pending: 0, active: 0, closed: 0 } };
         },
+        initialPageParam: null as string | null,
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
         staleTime: 1 * 60 * 1000, // 1 minute cache
     });
 }
@@ -116,16 +127,27 @@ export function useRequestChat(requestId: string | undefined) {
     });
 }
 
-export function usePortalHistory() {
-    return useQuery({
-        queryKey: queryKeys.portal.history(),
-        queryFn: async (): Promise<ServiceRequest[]> => {
-            const res = await apiClient.get<ServiceRequest[][]>("/api/portal/history");
+export function usePortalHistory(filters: { search?: string; status?: string; dept?: string } = {}) {
+    return useInfiniteQuery({
+        queryKey: [...queryKeys.portal.history(), filters],
+        queryFn: async ({ pageParam = null }): Promise<{ requests: ServiceRequest[]; nextCursor: string | null; hasNextPage: boolean; stats: any }> => {
+            const params = new URLSearchParams();
+            if (pageParam) params.append("cursor", String(pageParam));
+            if (filters.search) params.append("search", filters.search);
+            if (filters.status) params.append("status", filters.status);
+            if (filters.dept) params.append("dept", filters.dept);
+            params.append("limit", "5");
+
+            const res = await apiClient.get<{ requests: ServiceRequest[]; nextCursor: string | null; hasNextPage: boolean; stats: any }[]>(
+                `/api/portal/history?${params.toString()}`
+            );
             if (res.success && res.data?.[0]) {
                 return res.data[0];
             }
-            return [];
+            return { requests: [], nextCursor: null, hasNextPage: false, stats: { total: 0, pending: 0, completed: 0 } };
         },
+        initialPageParam: null as string | null,
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
         staleTime: 1 * 60 * 1000, // 1 minute cache
     });
 }

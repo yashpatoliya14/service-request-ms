@@ -30,7 +30,21 @@ import { toast } from "react-hot-toast";
 import { usePortalHistory, useCancelPortalRequest } from "@/features/portal/hooks";
 
 export default function UserRequestPortal() {
-  const { data: requests = [], isLoading: requestsLoading } = usePortalHistory();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [deptFilter, setDeptFilter] = useState("all");
+
+  const {
+    data: requestsData,
+    isLoading: requestsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePortalHistory({ search: searchQuery, status: statusFilter, dept: deptFilter });
+
+  const requests = requestsData?.pages.flatMap((page) => page.requests) ?? [];
+  const serverStats = requestsData?.pages[0]?.stats || { total: 0, pending: 0, completed: 0 };
+
   const { data: departments = [], isLoading: departmentsLoading } = useDepartments();
   const { data: statusesData = [], isLoading: statusesLoading } = useStatuses();
 
@@ -39,10 +53,6 @@ export default function UserRequestPortal() {
   const loading = requestsLoading || departmentsLoading || statusesLoading;
 
   const cancelRequestMutation = useCancelPortalRequest();
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [deptFilter, setDeptFilter] = useState("all");
 
   // ---- Cancel / Delete a request ----
   const handleCancelRequest = (id: string) => {
@@ -57,24 +67,7 @@ export default function UserRequestPortal() {
     );
   };
 
-  // ---- Filter Logic ----
-  const filteredRequests = requests.filter((req) => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch =
-      !searchQuery ||
-      req.Title?.toLowerCase().includes(query) ||
-      String(req.ServiceRequestID).includes(query);
-
-    const matchesStatus =
-      statusFilter === "all" ||
-      getStatusLabel(req.StatusID, statuses) === statusFilter;
-
-    const matchesDept = 
-      deptFilter === "all" ||
-      req.ServiceRequestType?.ServiceDepartment?.DeptName === deptFilter;
-
-    return matchesSearch && matchesStatus && matchesDept;
-  });
+  const filteredRequests = requests;
 
   return (
     <div className="space-y-6">
@@ -95,14 +88,14 @@ export default function UserRequestPortal() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="flex items-center gap-4 p-6">
-            <div className="text-2xl font-bold text-primary">{loading ? "—" : requests.length}</div>
+            <div className="text-2xl font-bold text-primary">{loading ? "—" : serverStats.total}</div>
             <p className="text-sm text-muted-foreground">Total Requests</p>
           </CardContent>
         </Card>
         <Card className="border-amber-200 bg-amber-50/50">
           <CardContent className="flex items-center gap-4 p-6">
             <div className="text-2xl font-bold text-amber-600">
-              {loading ? "—" : requests.filter((r) => r.ServiceRequestStatus?.IsDefault === true || (!r.ServiceRequestStatus && !r.StatusID)).length}
+              {loading ? "—" : serverStats.pending}
             </div>
             <p className="text-sm text-muted-foreground">Pending</p>
           </CardContent>
@@ -110,7 +103,7 @@ export default function UserRequestPortal() {
         <Card className="border-emerald-200 bg-emerald-50/50">
           <CardContent className="flex items-center gap-4 p-6">
             <div className="text-2xl font-bold text-emerald-600">
-              {loading ? "—" : requests.filter((r) => r.ServiceRequestStatus?.IsTerminal === true).length}
+              {loading ? "—" : serverStats.completed}
             </div>
             <p className="text-sm text-muted-foreground">Completed</p>
           </CardContent>
@@ -224,6 +217,26 @@ export default function UserRequestPortal() {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {hasNextPage && (
+            <div className="flex justify-center p-4 border-t bg-muted/20">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="w-full max-w-xs gap-2 transition-all duration-300 hover:bg-primary hover:text-primary-foreground shadow-sm"
+              >
+                {isFetchingNextPage ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading next batch...
+                  </>
+                ) : (
+                  "Load More History"
+                )}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
